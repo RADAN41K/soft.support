@@ -42,31 +42,37 @@ class SoftSupportApp(ctk.CTk):
         ctk.CTkLabel(self.client_frame, text="Технiчна пiдтримка LimanSoft",
                      font=ctk.CTkFont(size=18, weight="bold"),
                      text_color=self.WHITE).grid(
-            row=0, column=0, padx=10, pady=(12, 2), sticky="w")
+            row=0, column=0, padx=10, pady=(12, 2))
 
         ctk.CTkLabel(self.client_frame, text="Скануйте QR-код LimanSoft Help 24/7",
                      font=ctk.CTkFont(size=13),
                      text_color=self.WHITE).grid(
-            row=1, column=0, padx=10, pady=(0, 5), sticky="w")
+            row=1, column=0, padx=10, pady=(0, 5))
 
-        # QR + info side by side
+        # QR + info side by side, centered
         self.info_frame = ctk.CTkFrame(self.client_frame, fg_color="transparent")
         self.info_frame.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="ew")
-        self.info_frame.grid_columnconfigure(1, weight=1)
+        self.info_frame.grid_columnconfigure(0, weight=1)
+        self.info_frame.grid_columnconfigure(1, weight=0)
+        self.info_frame.grid_columnconfigure(2, weight=1)
 
-        self.lbl_qr = ctk.CTkLabel(self.info_frame, text="",
+        # Center column with QR + labels stacked
+        center = ctk.CTkFrame(self.info_frame, fg_color="transparent")
+        center.grid(row=0, column=1)
+
+        self.lbl_qr = ctk.CTkLabel(center, text="",
                                     fg_color=self.WHITE, corner_radius=8)
-        self.lbl_qr.grid(row=0, column=0, rowspan=3, padx=(0, 15), pady=5, sticky="nw")
+        self.lbl_qr.grid(row=0, column=0, pady=(5, 8))
 
-        self.lbl_client_id = ctk.CTkLabel(self.info_frame, text="—",
-                                           font=ctk.CTkFont(size=14, weight="bold"),
+        self.lbl_client_id = ctk.CTkLabel(center, text="—",
+                                           font=ctk.CTkFont(size=18, weight="bold"),
                                            text_color=self.WHITE)
-        self.lbl_client_id.grid(row=0, column=1, pady=(5, 2), sticky="w")
+        self.lbl_client_id.grid(row=1, column=0, pady=(0, 2))
 
-        self.lbl_phone = ctk.CTkLabel(self.info_frame, text="—",
-                                       font=ctk.CTkFont(size=14),
+        self.lbl_phone = ctk.CTkLabel(center, text="—",
+                                       font=ctk.CTkFont(size=16),
                                        text_color=self.WHITE)
-        self.lbl_phone.grid(row=1, column=1, pady=2, sticky="w")
+        self.lbl_phone.grid(row=2, column=0, pady=(0, 5))
 
         # --- Block 2: Ports ---
         self.ports_frame = ctk.CTkFrame(self, fg_color=self.WHITE, border_width=1,
