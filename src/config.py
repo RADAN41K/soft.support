@@ -4,9 +4,18 @@ import sys
 
 
 def get_base_path():
-    """Get base path for config file (works with PyInstaller)."""
+    """Get base path for config file (works with PyInstaller).
+
+    On macOS .app bundle, executable is inside
+    SoftSupport.app/Contents/MacOS/ — config.json should be
+    next to the .app bundle, not inside it.
+    """
     if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
+        exe_dir = os.path.dirname(sys.executable)
+        # macOS .app bundle: go up from Contents/MacOS to .app parent
+        if exe_dir.endswith("Contents/MacOS"):
+            return os.path.dirname(os.path.dirname(os.path.dirname(exe_dir)))
+        return exe_dir
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
