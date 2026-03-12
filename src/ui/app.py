@@ -147,51 +147,58 @@ class SoftSupportApp(ctk.CTk):
         self.client_frame.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(self.client_frame, text="Технiчна пiдтримка LimanSoft",
-                     font=ctk.CTkFont(size=15, weight="bold"),
+                     font=ctk.CTkFont(size=17, weight="bold"),
                      text_color=self.WHITE).grid(
-            row=0, column=0, padx=10, pady=(12, 2))
+            row=0, column=0, padx=10, pady=(6, 0))
 
         ctk.CTkLabel(self.client_frame, text="Скануйте QR-код LimanSoft Help 24/7",
-                     font=ctk.CTkFont(size=11),
+                     font=ctk.CTkFont(size=13),
                      text_color=self.WHITE).grid(
-            row=1, column=0, padx=10, pady=(0, 5))
+            row=1, column=0, padx=10, pady=(0, 2))
 
-        # QR + info centered
+        # QR + client info side by side
         self.info_frame = ctk.CTkFrame(self.client_frame, fg_color="transparent")
-        self.info_frame.grid(row=2, column=0, padx=10, pady=(0, 5), sticky="ew")
+        self.info_frame.grid(row=2, column=0, padx=10, pady=(0, 8), sticky="ew")
         self.info_frame.grid_columnconfigure(0, weight=1)
         self.info_frame.grid_columnconfigure(1, weight=0)
-        self.info_frame.grid_columnconfigure(2, weight=1)
+        self.info_frame.grid_columnconfigure(2, weight=0)
+        self.info_frame.grid_columnconfigure(3, weight=1)
 
-        center = ctk.CTkFrame(self.info_frame, fg_color="transparent")
-        center.grid(row=0, column=1)
+        # Spacer left
+        ctk.CTkFrame(self.info_frame, fg_color="transparent", width=1).grid(
+            row=0, column=0)
 
-        self.lbl_qr = ctk.CTkLabel(center, text="",
-                                    fg_color=self.WHITE, corner_radius=8)
-        self.lbl_qr.grid(row=0, column=0, pady=(5, 8))
+        self.lbl_qr = ctk.CTkLabel(self.info_frame, text="",
+                                    fg_color=self.WHITE, corner_radius=6)
+        self.lbl_qr.grid(row=0, column=1, padx=(0, 10), pady=3)
 
-        self.lbl_client_id = ctk.CTkLabel(center, text="—",
-                                           font=ctk.CTkFont(size=14, weight="bold"),
+        right = ctk.CTkFrame(self.info_frame, fg_color="transparent")
+        right.grid(row=0, column=2)
+
+        self.lbl_client_id = ctk.CTkLabel(right, text="—",
+                                           font=ctk.CTkFont(size=16, weight="bold"),
                                            text_color=self.WHITE)
-        self.lbl_client_id.grid(row=1, column=0, pady=(0, 2))
+        self.lbl_client_id.grid(row=0, column=0, sticky="w")
 
-        self.lbl_phone = ctk.CTkLabel(center, text="—",
-                                       font=ctk.CTkFont(size=13),
+        ctk.CTkLabel(right, text="Номер тех.пiдтримки:",
+                     font=ctk.CTkFont(size=10),
+                     text_color="#FFD5B0").grid(row=1, column=0, sticky="w")
+
+        self.lbl_phone = ctk.CTkLabel(right, text="—",
+                                       font=ctk.CTkFont(size=15),
                                        text_color=self.WHITE)
-        self.lbl_phone.grid(row=2, column=0, pady=(0, 2))
+        self.lbl_phone.grid(row=2, column=0, sticky="w")
 
-        self.lbl_station = ctk.CTkLabel(center, text=f"Станцiя: {platform.node()}",
-                                         font=ctk.CTkFont(size=11),
-                                         text_color=self.WHITE)
-        self.lbl_station.grid(row=3, column=0, pady=(0, 5))
-
-        # Edit button
         self.btn_edit = ctk.CTkButton(
-            self.client_frame, text="Редагувати", width=90, height=26,
+            right, text="Редагувати", width=80, height=22,
             fg_color=self.DARK_ORANGE, hover_color="#CC5500",
-            font=ctk.CTkFont(size=11),
+            font=ctk.CTkFont(size=10),
             command=self._open_config_editor)
-        self.btn_edit.grid(row=3, column=0, pady=(0, 10))
+        self.btn_edit.grid(row=3, column=0, sticky="w", pady=(2, 0))
+
+        # Spacer right
+        ctk.CTkFrame(self.info_frame, fg_color="transparent", width=1).grid(
+            row=0, column=3)
 
         row += 1
 
