@@ -209,12 +209,12 @@ class SoftSupportApp(ctk.CTk):
         self.ports_header.grid_columnconfigure(0, weight=1)
 
         self.btn_toggle_ports = ctk.CTkButton(
-            self.ports_header, text="\u25BC  USB / COM порти", width=200,
+            self.ports_header, text="\u25BC  USB / COM порти",
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color="transparent", hover_color="#F0F0F0",
             text_color=self.TEXT_DARK, anchor="w",
             command=self._toggle_ports)
-        self.btn_toggle_ports.grid(row=0, column=0, padx=5, pady=6, sticky="w")
+        self.btn_toggle_ports.grid(row=0, column=0, padx=5, pady=6, sticky="ew")
 
         row += 1
 
@@ -236,12 +236,12 @@ class SoftSupportApp(ctk.CTk):
         self.net_header.grid_columnconfigure(0, weight=1)
 
         self.btn_toggle_net = ctk.CTkButton(
-            self.net_header, text="\u25BC  Мережа", width=200,
+            self.net_header, text="\u25BC  Мережа",
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color="transparent", hover_color="#F0F0F0",
             text_color=self.TEXT_DARK, anchor="w",
             command=self._toggle_net)
-        self.btn_toggle_net.grid(row=0, column=0, padx=5, pady=6, sticky="w")
+        self.btn_toggle_net.grid(row=0, column=0, padx=5, pady=6, sticky="ew")
 
         row += 1
 
