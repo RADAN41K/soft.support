@@ -434,12 +434,16 @@ class SoftSupportApp(ctk.CTk):
 
     # --- Config editor ---
     def _open_config_editor(self):
+        # Temporarily disable topmost so dialogs are interactive
+        self.attributes("-topmost", False)
+
         pwd_dialog = ctk.CTkInputDialog(
             text="Введiть пароль:", title="Доступ")
         pwd = pwd_dialog.get_input()
         if pwd != EDIT_PASSWORD:
             if pwd is not None:
                 log("Невдала спроба входу до налаштувань", "WARN")
+            self.attributes("-topmost", True)
             return
 
         log("Відкрито редактор налаштувань")
@@ -447,7 +451,7 @@ class SoftSupportApp(ctk.CTk):
         editor.title("Налаштування клiєнта — LimanSoft")
         editor.geometry("400x300")
         editor.attributes("-topmost", True)
-        editor.grab_set()
+        editor.focus_force()
 
         editor.grid_columnconfigure(0, weight=1)
 
@@ -499,6 +503,13 @@ class SoftSupportApp(ctk.CTk):
                 self.lbl_qr.configure(image=self._qr_image, text="")
 
             editor.destroy()
+            self.attributes("-topmost", True)
+
+        def on_editor_close():
+            editor.destroy()
+            self.attributes("-topmost", True)
+
+        editor.protocol("WM_DELETE_WINDOW", on_editor_close)
 
         ctk.CTkButton(editor, text="Зберегти", width=160,
                       fg_color=self.ORANGE, hover_color=self.DARK_ORANGE,
