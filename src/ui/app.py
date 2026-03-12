@@ -386,9 +386,9 @@ class SoftSupportApp(ctk.CTk):
     # --- Fit height ---
     def _fit_height(self):
         self.update_idletasks()
-        req_w = max(self.winfo_reqwidth(), self.winfo_width(), 380)
+        cur_w = self.winfo_width()
         req_h = self.winfo_reqheight()
-        self.geometry(f"{req_w}x{req_h}")
+        self.geometry(f"{cur_w}x{req_h}")
 
     # --- Toggle sections ---
     def _toggle_ports(self):
