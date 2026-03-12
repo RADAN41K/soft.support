@@ -24,7 +24,7 @@ Name: "{group}\Soft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "
 Name: "{autodesktop}\Soft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"; Tasks: desktopicon
 
 [Tasks]
-Name: "desktopicon"; Description: "Створити ярлик на робочому столi"; GroupDescription: "Додатковi дiї:"; Flags: checked
+Name: "desktopicon"; Description: "Створити ярлик на робочому столi"; GroupDescription: "Додатковi дiї:"
 
 [Run]
 Filename: "{app}\SoftSupport.exe"; Description: "Запустити Soft Support"; Flags: nowait postinstall skipifsilent
