@@ -27,6 +27,7 @@ a = Analysis(
         "serial.tools",
         "serial.tools.list_ports",
         "psutil",
+        "pystray",
     ],
     hookspath=[],
     hooksconfig={},
