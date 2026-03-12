@@ -270,8 +270,6 @@ class SoftSupportApp(ctk.CTk):
                                         text_color=self.TEXT_DARK)
         self.lbl_radmin.grid(row=2, column=1, padx=10, pady=(2, 8), sticky="w")
 
-        self.net_content.grid(row=self._net_row, column=0, padx=10, pady=(0, 0), sticky="ew")
-
         row += 1
 
         # --- VPN Status bar ---
