@@ -38,8 +38,8 @@ class SoftSupportApp(ctk.CTk):
 
         self.config_data = {}
         self._qr_image = None
-        self._ports_expanded = True
-        self._net_expanded = True
+        self._ports_expanded = False
+        self._net_expanded = False
         self._tray_icon = None
         self._tray_thread = None
 
@@ -209,7 +209,7 @@ class SoftSupportApp(ctk.CTk):
         self.ports_header.grid_columnconfigure(0, weight=1)
 
         self.btn_toggle_ports = ctk.CTkButton(
-            self.ports_header, text="\u25BC  USB / COM порти",
+            self.ports_header, text="\u25B6  USB / COM порти",
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color="transparent", hover_color="#F0F0F0",
             text_color=self.TEXT_DARK, anchor="w",
@@ -220,7 +220,6 @@ class SoftSupportApp(ctk.CTk):
 
         self.ports_content = ctk.CTkFrame(self, fg_color=self.WHITE, border_width=1,
                                            border_color="#E0E0E0", corner_radius=0)
-        self.ports_content.grid(row=row, column=0, padx=10, pady=(0, 0), sticky="ew")
         self.ports_content.grid_columnconfigure(0, weight=1)
         self._ports_row = row
 
@@ -236,7 +235,7 @@ class SoftSupportApp(ctk.CTk):
         self.net_header.grid_columnconfigure(0, weight=1)
 
         self.btn_toggle_net = ctk.CTkButton(
-            self.net_header, text="\u25BC  Мережа",
+            self.net_header, text="\u25B6  Мережа",
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color="transparent", hover_color="#F0F0F0",
             text_color=self.TEXT_DARK, anchor="w",
