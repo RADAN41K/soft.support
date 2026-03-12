@@ -1,6 +1,9 @@
+import os
+import platform
+import sys
 import threading
 import customtkinter as ctk
-from PIL import Image
+from PIL import Image, ImageTk
 
 from src.config import load_config
 from src.utils.qr import generate_qr
@@ -14,6 +17,7 @@ class SoftSupportApp(ctk.CTk):
 
         self.title("Soft Support — LimanSoft")
         self.minsize(340, 200)
+        self._set_icon()
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
         self.configure(fg_color="#FFFFFF")
@@ -32,6 +36,18 @@ class SoftSupportApp(ctk.CTk):
         self._build_ui()
         self._load_data()
         self.after(100, self._fit_height)
+
+    def _set_icon(self):
+        """Set window icon (cross-platform)."""
+        if getattr(sys, "frozen", False):
+            base = sys._MEIPASS
+        else:
+            base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        icon_png = os.path.join(base, "assets", "icon.png")
+        if os.path.exists(icon_png):
+            img = Image.open(icon_png)
+            self._icon = ImageTk.PhotoImage(img)
+            self.iconphoto(True, self._icon)
 
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
