@@ -12,11 +12,18 @@ class SoftSupportApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Soft Support")
-        self.geometry("520x700")
-        self.minsize(480, 600)
-        ctk.set_appearance_mode("dark")
+        self.title("Soft Support — LimanSoft")
+        self.geometry("520x750")
+        self.minsize(480, 650)
+        ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
+        self.configure(fg_color="#FFFFFF")
+
+        # Brand colors
+        self.ORANGE = "#FF6600"
+        self.DARK_ORANGE = "#E55C00"
+        self.WHITE = "#FFFFFF"
+        self.TEXT_DARK = "#333333"
 
         self.config_data = {}
         self._qr_image = None  # prevent GC
@@ -27,32 +34,43 @@ class SoftSupportApp(ctk.CTk):
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
 
-        # --- Block 1: Client ---
-        self.client_frame = ctk.CTkFrame(self)
+        # --- Block 1: Client / Branding ---
+        self.client_frame = ctk.CTkFrame(self, fg_color=self.ORANGE, corner_radius=10)
         self.client_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="ew")
-        self.client_frame.grid_columnconfigure(1, weight=1)
+        self.client_frame.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(self.client_frame, text="Торговая точка",
-                     font=ctk.CTkFont(size=16, weight="bold")).grid(
-            row=0, column=0, columnspan=2, padx=10, pady=(10, 5), sticky="w")
+        ctk.CTkLabel(self.client_frame, text="Технiчна пiдтримка LimanSoft",
+                     font=ctk.CTkFont(size=18, weight="bold"),
+                     text_color=self.WHITE).grid(
+            row=0, column=0, padx=10, pady=(12, 2), sticky="w")
 
-        ctk.CTkLabel(self.client_frame, text="Название:").grid(
-            row=1, column=0, padx=10, pady=2, sticky="w")
-        self.lbl_client_id = ctk.CTkLabel(self.client_frame, text="—")
-        self.lbl_client_id.grid(row=1, column=1, padx=10, pady=2, sticky="w")
+        ctk.CTkLabel(self.client_frame, text="Скануйте QR-код LimanSoft Help 24/7",
+                     font=ctk.CTkFont(size=13),
+                     text_color=self.WHITE).grid(
+            row=1, column=0, padx=10, pady=(0, 5), sticky="w")
 
-        ctk.CTkLabel(self.client_frame, text="Телефон:").grid(
-            row=2, column=0, padx=10, pady=2, sticky="w")
-        self.lbl_phone = ctk.CTkLabel(self.client_frame, text="—")
-        self.lbl_phone.grid(row=2, column=1, padx=10, pady=2, sticky="w")
+        # QR + info side by side
+        self.info_frame = ctk.CTkFrame(self.client_frame, fg_color="transparent")
+        self.info_frame.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="ew")
+        self.info_frame.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(self.client_frame, text="Telegram QR:").grid(
-            row=3, column=0, padx=10, pady=(5, 10), sticky="nw")
-        self.lbl_qr = ctk.CTkLabel(self.client_frame, text="")
-        self.lbl_qr.grid(row=3, column=1, padx=10, pady=(5, 10), sticky="w")
+        self.lbl_qr = ctk.CTkLabel(self.info_frame, text="",
+                                    fg_color=self.WHITE, corner_radius=8)
+        self.lbl_qr.grid(row=0, column=0, rowspan=3, padx=(0, 15), pady=5, sticky="nw")
+
+        self.lbl_client_id = ctk.CTkLabel(self.info_frame, text="—",
+                                           font=ctk.CTkFont(size=14, weight="bold"),
+                                           text_color=self.WHITE)
+        self.lbl_client_id.grid(row=0, column=1, pady=(5, 2), sticky="w")
+
+        self.lbl_phone = ctk.CTkLabel(self.info_frame, text="—",
+                                       font=ctk.CTkFont(size=14),
+                                       text_color=self.WHITE)
+        self.lbl_phone.grid(row=1, column=1, pady=2, sticky="w")
 
         # --- Block 2: Ports ---
-        self.ports_frame = ctk.CTkFrame(self)
+        self.ports_frame = ctk.CTkFrame(self, fg_color=self.WHITE, border_width=1,
+                                         border_color="#E0E0E0", corner_radius=10)
         self.ports_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         self.ports_frame.grid_columnconfigure(0, weight=1)
 
@@ -60,12 +78,14 @@ class SoftSupportApp(ctk.CTk):
         header_ports.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="ew")
         header_ports.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(header_ports, text="USB / COM порты",
-                     font=ctk.CTkFont(size=16, weight="bold")).grid(
+        ctk.CTkLabel(header_ports, text="USB / COM порти",
+                     font=ctk.CTkFont(size=16, weight="bold"),
+                     text_color=self.TEXT_DARK).grid(
             row=0, column=0, sticky="w")
 
         self.btn_refresh_ports = ctk.CTkButton(
-            header_ports, text="⟳ Обновить", width=100,
+            header_ports, text="Оновити", width=90,
+            fg_color=self.ORANGE, hover_color=self.DARK_ORANGE,
             command=self._refresh_ports)
         self.btn_refresh_ports.grid(row=0, column=1, sticky="e")
 
@@ -73,7 +93,8 @@ class SoftSupportApp(ctk.CTk):
         self.ports_text.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="ew")
 
         # --- Block 3: Network ---
-        self.net_frame = ctk.CTkFrame(self)
+        self.net_frame = ctk.CTkFrame(self, fg_color=self.WHITE, border_width=1,
+                                       border_color="#E0E0E0", corner_radius=10)
         self.net_frame.grid(row=2, column=0, padx=10, pady=(5, 10), sticky="ew")
         self.net_frame.grid_columnconfigure(1, weight=1)
 
@@ -81,28 +102,36 @@ class SoftSupportApp(ctk.CTk):
         header_net.grid(row=0, column=0, columnspan=2, padx=10, pady=(10, 5), sticky="ew")
         header_net.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(header_net, text="Сеть",
-                     font=ctk.CTkFont(size=16, weight="bold")).grid(
+        ctk.CTkLabel(header_net, text="Мережа",
+                     font=ctk.CTkFont(size=16, weight="bold"),
+                     text_color=self.TEXT_DARK).grid(
             row=0, column=0, sticky="w")
 
         self.btn_refresh_net = ctk.CTkButton(
-            header_net, text="⟳ Обновить", width=100,
+            header_net, text="Оновити", width=90,
+            fg_color=self.ORANGE, hover_color=self.DARK_ORANGE,
             command=self._refresh_network)
         self.btn_refresh_net.grid(row=0, column=1, sticky="e")
 
-        ctk.CTkLabel(self.net_frame, text="Локальный IP:").grid(
+        ctk.CTkLabel(self.net_frame, text="Локальний IP:",
+                     text_color=self.TEXT_DARK).grid(
             row=1, column=0, padx=10, pady=2, sticky="w")
-        self.lbl_local_ip = ctk.CTkLabel(self.net_frame, text="...")
+        self.lbl_local_ip = ctk.CTkLabel(self.net_frame, text="...",
+                                          text_color=self.TEXT_DARK)
         self.lbl_local_ip.grid(row=1, column=1, padx=10, pady=2, sticky="w")
 
-        ctk.CTkLabel(self.net_frame, text="NetBird IP:").grid(
+        ctk.CTkLabel(self.net_frame, text="NetBird IP:",
+                     text_color=self.TEXT_DARK).grid(
             row=2, column=0, padx=10, pady=2, sticky="w")
-        self.lbl_netbird = ctk.CTkLabel(self.net_frame, text="...")
+        self.lbl_netbird = ctk.CTkLabel(self.net_frame, text="...",
+                                         text_color=self.TEXT_DARK)
         self.lbl_netbird.grid(row=2, column=1, padx=10, pady=2, sticky="w")
 
-        ctk.CTkLabel(self.net_frame, text="Radmin IP:").grid(
+        ctk.CTkLabel(self.net_frame, text="Radmin IP:",
+                     text_color=self.TEXT_DARK).grid(
             row=3, column=0, padx=10, pady=(2, 10), sticky="w")
-        self.lbl_radmin = ctk.CTkLabel(self.net_frame, text="...")
+        self.lbl_radmin = ctk.CTkLabel(self.net_frame, text="...",
+                                        text_color=self.TEXT_DARK)
         self.lbl_radmin.grid(row=3, column=1, padx=10, pady=(2, 10), sticky="w")
 
     def _load_data(self):
@@ -145,7 +174,7 @@ class SoftSupportApp(ctk.CTk):
             for p in serial_ports:
                 self.ports_text.insert("end", f"  {p['device']}  {p['description']}\n")
         else:
-            self.ports_text.insert("end", "── COM / Serial ──\n  Нет устройств\n")
+            self.ports_text.insert("end", "── COM / Serial ──\n  Немає пристроїв\n")
 
         self.ports_text.insert("end", "\n")
 
@@ -154,7 +183,7 @@ class SoftSupportApp(ctk.CTk):
             for d in usb_devices:
                 self.ports_text.insert("end", f"  {d}\n")
         else:
-            self.ports_text.insert("end", "── USB ──\n  Нет устройств\n")
+            self.ports_text.insert("end", "── USB ──\n  Немає пристроїв\n")
 
         self.ports_text.configure(state="disabled")
 
