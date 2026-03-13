@@ -349,20 +349,16 @@ class SoftSupportApp(ctk.CTk):
         self.ports_text.delete("1.0", "end")
 
         if serial_ports:
-            self.ports_text.insert("end", "── COM / Serial ──\n")
             for p in serial_ports:
-                self.ports_text.insert("end", f"  {p['device']}  {p['description']}\n")
+                self.ports_text.insert("end", f"  {p['device']}\n")
         else:
-            self.ports_text.insert("end", "── COM / Serial ──\n  Немає пристроїв\n")
-
-        self.ports_text.insert("end", "\n")
+            self.ports_text.insert("end", "  COM: немає пристроїв\n")
 
         if usb_devices:
-            self.ports_text.insert("end", "── USB ──\n")
-            for d in usb_devices:
-                self.ports_text.insert("end", f"  {d}\n")
+            for i, d in enumerate(usb_devices, 1):
+                self.ports_text.insert("end", f"  USB{i}\n")
         else:
-            self.ports_text.insert("end", "── USB ──\n  Немає пристроїв\n")
+            self.ports_text.insert("end", "  USB: немає пристроїв\n")
 
         self.ports_text.configure(state="disabled")
 
