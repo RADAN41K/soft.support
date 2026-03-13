@@ -281,6 +281,12 @@ class SoftSupportApp(ctk.CTk):
         self.lbl_local_ip = ctk.CTkLabel(self.net_content, text="...",
                                           text_color=self.TEXT_DARK)
         self.lbl_local_ip.grid(row=0, column=1, padx=10, pady=2, sticky="w")
+        self.btn_copy_local = ctk.CTkButton(
+            self.net_content, text="📋", width=28, height=22,
+            fg_color="#E0E0E0", hover_color="#D0D0D0", text_color=self.TEXT_DARK,
+            font=ctk.CTkFont(size=12),
+            command=lambda: self._copy_ip(self.lbl_local_ip))
+        self.btn_copy_local.grid(row=0, column=2, padx=(0, 10), pady=2)
 
         ctk.CTkLabel(self.net_content, text="NetBird IP:",
                      text_color=self.TEXT_DARK).grid(
@@ -288,6 +294,12 @@ class SoftSupportApp(ctk.CTk):
         self.lbl_netbird = ctk.CTkLabel(self.net_content, text="...",
                                          text_color=self.TEXT_DARK)
         self.lbl_netbird.grid(row=1, column=1, padx=10, pady=2, sticky="w")
+        self.btn_copy_nb = ctk.CTkButton(
+            self.net_content, text="📋", width=28, height=22,
+            fg_color="#E0E0E0", hover_color="#D0D0D0", text_color=self.TEXT_DARK,
+            font=ctk.CTkFont(size=12),
+            command=lambda: self._copy_ip(self.lbl_netbird))
+        self.btn_copy_nb.grid(row=1, column=2, padx=(0, 10), pady=2)
 
         ctk.CTkLabel(self.net_content, text="Radmin IP:",
                      text_color=self.TEXT_DARK).grid(
@@ -295,6 +307,12 @@ class SoftSupportApp(ctk.CTk):
         self.lbl_radmin = ctk.CTkLabel(self.net_content, text="...",
                                         text_color=self.TEXT_DARK)
         self.lbl_radmin.grid(row=2, column=1, padx=10, pady=(2, 8), sticky="w")
+        self.btn_copy_radmin = ctk.CTkButton(
+            self.net_content, text="📋", width=28, height=22,
+            fg_color="#E0E0E0", hover_color="#D0D0D0", text_color=self.TEXT_DARK,
+            font=ctk.CTkFont(size=12),
+            command=lambda: self._copy_ip(self.lbl_radmin))
+        self.btn_copy_radmin.grid(row=2, column=2, padx=(0, 10), pady=(2, 8))
 
         row += 1
 
@@ -428,6 +446,17 @@ class SoftSupportApp(ctk.CTk):
         cur_w = self.winfo_width()
         req_h = self.winfo_reqheight()
         self.geometry(f"{cur_w}x{req_h}")
+
+    # --- Copy IP to clipboard ---
+    def _copy_ip(self, label):
+        ip = label.cget("text")
+        if ip and ip != "..." and not ip.startswith("Не "):
+            self.clipboard_clear()
+            self.clipboard_append(ip)
+            # Brief visual feedback
+            orig_text = label.cget("text")
+            label.configure(text="Скопійовано!")
+            self.after(1000, lambda: label.configure(text=orig_text))
 
     # --- Toggle sections ---
     def _toggle_ports(self):
