@@ -50,19 +50,21 @@ def get_radmin_ip():
     system = platform.system()
     try:
         if system == "Windows":
+            ps_script = r"""
+$cfg = Get-WmiObject Win32_NetworkAdapterConfiguration -EA SilentlyContinue |
+  Where-Object { $_.Description -match 'Radmin' -and $_.IPEnabled -eq $true -and $_.IPAddress -ne $null }
+if ($cfg) {
+  $ip = $cfg.IPAddress | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' -and $_ -notmatch '^169\.254\.' -and $_ -ne '0.0.0.0' } | Select-Object -First 1
+  if ($ip) { $ip }
+}
+"""
             out = subprocess.check_output(
-                ["ipconfig"], text=True, timeout=10,
-                **_SUBPROCESS_KWARGS
+                ["powershell", "-NoProfile", "-Command", ps_script],
+                text=True, timeout=10, **_SUBPROCESS_KWARGS
             )
-            lines = out.splitlines()
-            in_radmin = False
-            for line in lines:
-                if "Radmin" in line:
-                    in_radmin = True
-                if in_radmin and "IPv4" in line:
-                    return line.split(":")[-1].strip()
-                if in_radmin and line.strip() == "":
-                    in_radmin = False
+            ip = out.strip()
+            if ip:
+                return ip
 
         elif system == "Darwin" or system == "Linux":
             out = subprocess.check_output(
