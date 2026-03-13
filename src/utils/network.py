@@ -2,6 +2,14 @@ import platform
 import socket
 import subprocess
 
+# Hide console window on Windows
+_SUBPROCESS_KWARGS = {}
+if platform.system() == "Windows":
+    _SUBPROCESS_KWARGS["creationflags"] = (
+        subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW")
+        else 0x08000000
+    )
+
 
 def get_local_ip():
     """Get local IP address."""
@@ -19,7 +27,8 @@ def get_netbird_ip():
     """Get NetBird VPN IP address."""
     try:
         out = subprocess.check_output(
-            ["netbird", "status"], text=True, timeout=10
+            ["netbird", "status"], text=True, timeout=10,
+            **_SUBPROCESS_KWARGS
         )
         for line in out.splitlines():
             if "NetBird IP" in line or "IP:" in line:
@@ -39,7 +48,8 @@ def get_radmin_ip():
     try:
         if system == "Windows":
             out = subprocess.check_output(
-                ["ipconfig"], text=True, timeout=10
+                ["ipconfig"], text=True, timeout=10,
+                **_SUBPROCESS_KWARGS
             )
             lines = out.splitlines()
             in_radmin = False
@@ -54,7 +64,7 @@ def get_radmin_ip():
         elif system == "Darwin" or system == "Linux":
             out = subprocess.check_output(
                 ["ifconfig"] if system == "Darwin" else ["ip", "addr"],
-                text=True, timeout=10
+                text=True, timeout=10, **_SUBPROCESS_KWARGS
             )
             lines = out.splitlines()
             in_radmin = False

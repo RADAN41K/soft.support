@@ -1,7 +1,16 @@
 import platform
 import subprocess
+import sys
 
 import serial.tools.list_ports
+
+# Hide console window on Windows
+_SUBPROCESS_KWARGS = {}
+if platform.system() == "Windows":
+    _SUBPROCESS_KWARGS["creationflags"] = (
+        subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW")
+        else 0x08000000
+    )
 
 
 def get_serial_ports():
@@ -50,7 +59,7 @@ def get_usb_devices():
         if system == "Darwin":
             out = subprocess.check_output(
                 ["system_profiler", "SPUSBDataType", "-detailLevel", "mini"],
-                text=True, timeout=10
+                text=True, timeout=10, **_SUBPROCESS_KWARGS
             )
             current_device = None
             is_internal = False
@@ -78,7 +87,7 @@ def get_usb_devices():
 
         elif system == "Linux":
             out = subprocess.check_output(
-                ["lsusb"], text=True, timeout=10
+                ["lsusb"], text=True, timeout=10, **_SUBPROCESS_KWARGS
             )
             for line in out.splitlines():
                 if line.strip():
@@ -95,12 +104,12 @@ def get_usb_devices():
 
         elif system == "Windows":
             out = subprocess.check_output(
-                ["powershell", "-Command",
+                ["powershell", "-NoProfile", "-Command",
                  "Get-PnpDevice -Class USB -Status OK "
                  "| Where-Object { $_.FriendlyName -notmatch "
                  "'Hub|Host Controller|Root|Composite' } "
                  "| Select-Object -ExpandProperty FriendlyName"],
-                text=True, timeout=10
+                text=True, timeout=10, **_SUBPROCESS_KWARGS
             )
             for line in out.splitlines():
                 name = line.strip()
