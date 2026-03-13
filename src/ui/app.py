@@ -365,11 +365,13 @@ class SoftSupportApp(ctk.CTk):
                     log_device("[VPN] NetBird ВІДКЛЮЧЕНИЙ")
                 self._prev["vpn_status"] = vpn_status
 
+            print(f"[DEBUG] net: local={local_ip}, nb={netbird_ip}, rad={radmin_ip}, vpn_on={vpn_on}")
             self.after(0, lambda: self._update_ui(
                 serial_ports, usb_devices,
                 local_ip, netbird_ip, radmin_ip, vpn_on
             ))
         except Exception as e:
+            print(f"[ERROR] bg_scan failed: {e}")
             log(f"[ERROR] bg_scan failed: {e}")
 
     def _update_ui(self, serial_ports, usb_devices,

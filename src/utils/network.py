@@ -31,11 +31,14 @@ def get_netbird_ip():
             **_SUBPROCESS_KWARGS
         )
         for line in out.splitlines():
-            if "NetBird IP" in line or "IP:" in line:
+            if "NetBird IP" in line:
                 parts = line.split(":")
                 if len(parts) >= 2:
-                    ip = parts[-1].strip().split("/")[0]
-                    if ip:
+                    val = parts[-1].strip()
+                    if val in ("N/A", "", "-"):
+                        return "Не подключён"
+                    ip = val.split("/")[0]
+                    if ip and ip[0].isdigit():
                         return ip
         return "Не подключён"
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
