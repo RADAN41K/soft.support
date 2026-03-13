@@ -324,50 +324,53 @@ class SoftSupportApp(ctk.CTk):
         self.after(REFRESH_INTERVAL_MS, self._do_refresh)
 
     def _bg_scan(self):
-        # Ports
-        serial_ports = get_serial_ports()
-        usb_devices = get_usb_devices()
+        try:
+            # Ports
+            serial_ports = get_serial_ports()
+            usb_devices = get_usb_devices()
 
-        com_str = ", ".join(p["device"] for p in serial_ports) if serial_ports else "Немає"
-        usb_str = ", ".join(usb_devices) if usb_devices else "Немає"
+            com_str = ", ".join(p["device"] for p in serial_ports) if serial_ports else "Немає"
+            usb_str = ", ".join(usb_devices) if usb_devices else "Немає"
 
-        if com_str != self._prev["com"]:
-            log_device(f"[COM] Порти змінено: '{self._prev['com']}' -> '{com_str}'")
-            self._prev["com"] = com_str
-        if usb_str != self._prev["usb"]:
-            log_device(f"[USB] Порти змінено: '{self._prev['usb']}' -> '{usb_str}'")
-            self._prev["usb"] = usb_str
+            if com_str != self._prev["com"]:
+                log_device(f"[COM] Порти змінено: '{self._prev['com']}' -> '{com_str}'")
+                self._prev["com"] = com_str
+            if usb_str != self._prev["usb"]:
+                log_device(f"[USB] Порти змінено: '{self._prev['usb']}' -> '{usb_str}'")
+                self._prev["usb"] = usb_str
 
-        # Network
-        local_ip = get_local_ip()
-        netbird_ip = get_netbird_ip()
-        radmin_ip = get_radmin_ip()
+            # Network
+            local_ip = get_local_ip()
+            netbird_ip = get_netbird_ip()
+            radmin_ip = get_radmin_ip()
 
-        if local_ip != self._prev["local_ip"]:
-            log_device(f"[МЕРЕЖА] Локальний IP змінено: '{self._prev['local_ip']}' -> '{local_ip}'")
-            self._prev["local_ip"] = local_ip
-        if netbird_ip != self._prev["netbird"]:
-            log_device(f"[VPN] NetBird: '{self._prev['netbird']}' -> '{netbird_ip}'")
-            self._prev["netbird"] = netbird_ip
-        if radmin_ip != self._prev["radmin"]:
-            log_device(f"[VPN] Radmin: '{self._prev['radmin']}' -> '{radmin_ip}'")
-            self._prev["radmin"] = radmin_ip
+            if local_ip != self._prev["local_ip"]:
+                log_device(f"[МЕРЕЖА] Локальний IP змінено: '{self._prev['local_ip']}' -> '{local_ip}'")
+                self._prev["local_ip"] = local_ip
+            if netbird_ip != self._prev["netbird"]:
+                log_device(f"[VPN] NetBird: '{self._prev['netbird']}' -> '{netbird_ip}'")
+                self._prev["netbird"] = netbird_ip
+            if radmin_ip != self._prev["radmin"]:
+                log_device(f"[VPN] Radmin: '{self._prev['radmin']}' -> '{radmin_ip}'")
+                self._prev["radmin"] = radmin_ip
 
-        vpn_on = (netbird_ip not in self.INACTIVE_VALUES
-                  and not netbird_ip.startswith("Помилка")
-                  and not netbird_ip.startswith("Не "))
-        vpn_status = "on" if vpn_on else "off"
-        if vpn_status != self._prev["vpn_status"]:
-            if vpn_status == "on":
-                log_device(f"[VPN] NetBird ПІДКЛЮЧЕНИЙ | IP: {netbird_ip}")
-            else:
-                log_device("[VPN] NetBird ВІДКЛЮЧЕНИЙ")
-            self._prev["vpn_status"] = vpn_status
+            vpn_on = (netbird_ip not in self.INACTIVE_VALUES
+                      and not netbird_ip.startswith("Помилка")
+                      and not netbird_ip.startswith("Не "))
+            vpn_status = "on" if vpn_on else "off"
+            if vpn_status != self._prev["vpn_status"]:
+                if vpn_status == "on":
+                    log_device(f"[VPN] NetBird ПІДКЛЮЧЕНИЙ | IP: {netbird_ip}")
+                else:
+                    log_device("[VPN] NetBird ВІДКЛЮЧЕНИЙ")
+                self._prev["vpn_status"] = vpn_status
 
-        self.after(0, lambda: self._update_ui(
-            serial_ports, usb_devices,
-            local_ip, netbird_ip, radmin_ip, vpn_on
-        ))
+            self.after(0, lambda: self._update_ui(
+                serial_ports, usb_devices,
+                local_ip, netbird_ip, radmin_ip, vpn_on
+            ))
+        except Exception as e:
+            log(f"[ERROR] bg_scan failed: {e}")
 
     def _update_ui(self, serial_ports, usb_devices,
                    local_ip, netbird_ip, radmin_ip, vpn_on):
