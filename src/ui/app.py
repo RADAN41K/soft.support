@@ -21,7 +21,7 @@ class SoftSupportApp(ctk.CTk):
         super().__init__()
 
         self.title("Soft Support — LimanSoft")
-        self.minsize(340, 200)
+        self.minsize(460, 200)
         self._set_icon()
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
@@ -54,6 +54,7 @@ class SoftSupportApp(ctk.CTk):
         self._load_data()
         self._setup_tray()
         self._start_auto_refresh()
+        self.resizable(True, False)
         self.after(100, self._fit_height)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -154,11 +155,11 @@ class SoftSupportApp(ctk.CTk):
         ctk.CTkLabel(self.client_frame, text="Скануйте QR-код LimanSoft Help 24/7",
                      font=ctk.CTkFont(size=13),
                      text_color=self.WHITE).grid(
-            row=1, column=0, padx=10, pady=(0, 2))
+            row=1, column=0, padx=10, pady=(1, 0))
 
         # QR + client info side by side
         self.info_frame = ctk.CTkFrame(self.client_frame, fg_color="transparent")
-        self.info_frame.grid(row=2, column=0, padx=10, pady=(0, 8), sticky="ew")
+        self.info_frame.grid(row=2, column=0, padx=10, pady=(1, 6), sticky="ew")
         self.info_frame.grid_columnconfigure(0, weight=1)
         self.info_frame.grid_columnconfigure(1, weight=0)
         self.info_frame.grid_columnconfigure(2, weight=0)
@@ -170,7 +171,7 @@ class SoftSupportApp(ctk.CTk):
 
         self.lbl_qr = ctk.CTkLabel(self.info_frame, text="",
                                     fg_color=self.WHITE, corner_radius=6)
-        self.lbl_qr.grid(row=0, column=1, padx=(0, 10), pady=3)
+        self.lbl_qr.grid(row=0, column=1, padx=(0, 10), pady=0)
 
         right = ctk.CTkFrame(self.info_frame, fg_color="transparent")
         right.grid(row=0, column=2)
@@ -194,7 +195,7 @@ class SoftSupportApp(ctk.CTk):
             fg_color=self.DARK_ORANGE, hover_color="#CC5500",
             font=ctk.CTkFont(size=10),
             command=self._open_config_editor)
-        self.btn_edit.grid(row=3, column=0, sticky="w", pady=(2, 0))
+        self.btn_edit.grid(row=3, column=0, sticky="w", pady=(4, 0))
 
         # Spacer right
         ctk.CTkFrame(self.info_frame, fg_color="transparent", width=1).grid(
@@ -375,6 +376,7 @@ class SoftSupportApp(ctk.CTk):
         else:
             self.vpn_bar.configure(fg_color=self.RED)
             self.lbl_vpn_status.configure(text="NetBird вiдключений")
+
 
     # --- Fit height ---
     def _fit_height(self):
