@@ -354,7 +354,8 @@ class SoftSupportApp(ctk.CTk):
             self._prev["radmin"] = radmin_ip
 
         vpn_on = (netbird_ip not in self.INACTIVE_VALUES
-                  and not netbird_ip.startswith("Помилка"))
+                  and not netbird_ip.startswith("Помилка")
+                  and not netbird_ip.startswith("Не "))
         vpn_status = "on" if vpn_on else "off"
         if vpn_status != self._prev["vpn_status"]:
             if vpn_status == "on":
@@ -402,7 +403,8 @@ class SoftSupportApp(ctk.CTk):
         # Update network header with count
         net_count = sum(1 for ip in [local_ip, netbird_ip, radmin_ip]
                         if ip not in self.INACTIVE_VALUES
-                        and not ip.startswith("Помилка"))
+                        and not ip.startswith("Помилка")
+                        and not ip.startswith("Не "))
         arrow = "\u25BC" if self._net_expanded else "\u25B6"
         self.btn_toggle_net.configure(
             text=f"{arrow}  Мережа ({net_count})")
