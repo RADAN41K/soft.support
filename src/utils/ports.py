@@ -66,20 +66,27 @@ def get_usb_devices():
             for line in out.splitlines():
                 stripped = line.strip()
                 indent = len(line) - len(line.lstrip())
-                # Device names are at specific indent levels, no colon in name
-                if indent <= 12 and stripped and ":" not in stripped:
-                    # Save previous device if external
-                    if current_device and not is_internal:
-                        if _is_external(current_device):
-                            devices.append(current_device)
-                    current_device = stripped.rstrip(":")
-                    is_internal = False
-                elif current_device and "Built-In" in stripped:
-                    is_internal = True
-                elif current_device and "Location ID:" in stripped:
-                    # Internal devices often have specific location patterns
-                    if "built" in stripped.lower() or "internal" in stripped.lower():
+                # Top-level entries (Bus, Host Controller) at indent <= 4
+                # Device names at indent 8-12, ending with ":"
+                if stripped.endswith(":") and not stripped.startswith("Host Controller"):
+                    name = stripped.rstrip(":")
+                    if indent <= 4:
+                        # USB Bus header — skip
+                        current_device = None
+                        is_internal = False
+                    else:
+                        # Save previous device if external
+                        if current_device and not is_internal:
+                            if _is_external(current_device):
+                                devices.append(current_device)
+                        current_device = name
+                        is_internal = False
+                elif current_device:
+                    if "Built-In" in stripped:
                         is_internal = True
+                    elif "Location ID:" in stripped:
+                        if "built" in stripped.lower() or "internal" in stripped.lower():
+                            is_internal = True
             # Last device
             if current_device and not is_internal:
                 if _is_external(current_device):
@@ -105,9 +112,9 @@ def get_usb_devices():
         elif system == "Windows":
             out = subprocess.check_output(
                 ["powershell", "-NoProfile", "-Command",
-                 "Get-PnpDevice -Class USB -Status OK "
+                 "Get-PnpDevice -Class USB,USBSTOR,DiskDrive,WPD -Status OK "
                  "| Where-Object { $_.FriendlyName -notmatch "
-                 "'Hub|Host Controller|Root|Composite' } "
+                 "'Hub|Host Controller|Root|Composite|Input Device|Keyboard|Mouse|HID' } "
                  "| Select-Object -ExpandProperty FriendlyName"],
                 text=True, timeout=10, **_SUBPROCESS_KWARGS
             )

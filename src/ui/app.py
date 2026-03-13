@@ -385,8 +385,8 @@ class SoftSupportApp(ctk.CTk):
             self.ports_text.insert("end", "  COM: немає пристроїв\n")
 
         if usb_devices:
-            for i, d in enumerate(usb_devices, 1):
-                self.ports_text.insert("end", f"  USB{i}\n")
+            for d in usb_devices:
+                self.ports_text.insert("end", f"  USB: {d}\n")
         else:
             self.ports_text.insert("end", "  USB: немає пристроїв\n")
 
