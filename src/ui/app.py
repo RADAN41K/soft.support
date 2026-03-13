@@ -43,6 +43,7 @@ class SoftSupportApp(ctk.CTk):
         self._net_expanded = False
         self._tray_icon = None
         self._tray_thread = None
+        self._macos_tray = False
 
         # Previous values for change detection
         self._prev = {
@@ -61,6 +62,10 @@ class SoftSupportApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         log("Форму запущено, додаток готовий до роботи")
 
+    def run(self):
+        """Start the application."""
+        self.mainloop()
+
     # --- Icon ---
     def _set_icon(self):
         if getattr(sys, "frozen", False):
@@ -75,26 +80,35 @@ class SoftSupportApp(ctk.CTk):
             self._icon_path = icon_png
 
     # --- System tray ---
+    def _create_tray_icon(self):
+        """Create and return pystray Icon instance."""
+        import pystray
+        icon_path = getattr(self, "_icon_path", None)
+        if icon_path and os.path.exists(icon_path):
+            tray_image = Image.open(icon_path).resize((64, 64))
+        else:
+            tray_image = Image.new("RGB", (64, 64), "#FF6600")
+
+        menu = pystray.Menu(
+            pystray.MenuItem("Показати", self._tray_show, default=True),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Відкрити логи", self._tray_open_logs),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Закрити", self._tray_quit),
+        )
+        return pystray.Icon(
+            "SoftSupport", tray_image,
+            "LimanSoft Технічна підтримка", menu
+        )
+
     def _setup_tray(self):
         try:
-            import pystray
-            icon_path = getattr(self, "_icon_path", None)
-            if icon_path and os.path.exists(icon_path):
-                tray_image = Image.open(icon_path).resize((64, 64))
-            else:
-                tray_image = Image.new("RGB", (64, 64), "#FF6600")
-
-            menu = pystray.Menu(
-                pystray.MenuItem("Показати", self._tray_show, default=True),
-                pystray.Menu.SEPARATOR,
-                pystray.MenuItem("Відкрити логи", self._tray_open_logs),
-                pystray.Menu.SEPARATOR,
-                pystray.MenuItem("Закрити", self._tray_quit),
-            )
-            self._tray_icon = pystray.Icon(
-                "SoftSupport", tray_image,
-                "LimanSoft Технічна підтримка", menu
-            )
+            if platform.system() == "Darwin":
+                # macOS: pystray crashes with tkinter (GIL/AppKit conflict)
+                # Minimize to dock instead of tray
+                log("macOS: сворачування у Dock замість трею")
+                return
+            self._tray_icon = self._create_tray_icon()
             self._tray_thread = threading.Thread(
                 target=self._tray_icon.run, daemon=True
             )
@@ -132,8 +146,14 @@ class SoftSupportApp(ctk.CTk):
         self.focus_force()
 
     def _on_close(self):
-        self.withdraw()
-        log("Вікно приховано в трей")
+        if self._tray_icon:
+            self.withdraw()
+            log("Вікно приховано в трей")
+        elif platform.system() == "Darwin":
+            self.iconify()
+            log("Вікно згорнуто у Dock")
+        else:
+            self._quit_app()
 
     # --- UI ---
     def _build_ui(self):

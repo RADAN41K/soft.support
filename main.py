@@ -34,7 +34,7 @@ def main():
 
     from src.ui.app import SoftSupportApp
     app = SoftSupportApp()
-    app.mainloop()
+    app.run()
 
 
 if __name__ == "__main__":
