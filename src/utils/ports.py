@@ -1,4 +1,5 @@
 import platform
+import re
 import subprocess
 import sys
 
@@ -110,18 +111,51 @@ def get_usb_devices():
                             devices.append(name.strip())
 
         elif system == "Windows":
+            # Port USB detection from PS script logic:
+            # 1. Find devices with USB\VID_ or USBSTOR\ InstanceId
+            # 2. Filter by allowed classes, exclude internal
+            # 3. Determine physical port number via LocationPaths
+            ps_script = r"""
+$allowed = @('HIDClass','Printer','Image','WPD','DiskDrive','CDROM','Ports','SmartCardReader','Media','Net')
+$exclude = 'Hub|Root|Controller|Composite|Bluetooth|Fingerprint|Internal|Integrated|IR |Biometric'
+$devs = Get-PnpDevice -Status OK -EA SilentlyContinue |
+  Where-Object {
+    ($_.InstanceId -match '^USB\\VID_' -or $_.InstanceId -match '^USBSTOR\\') -and
+    $_.Class -in $allowed -and
+    $_.FriendlyName -notmatch $exclude
+  }
+foreach ($d in $devs) {
+  $id2 = $d.InstanceId
+  if ($id2 -match '^USBSTOR') {
+    $par = try { (Get-PnpDeviceProperty -InstanceId $id2 -KeyName 'DEVPKEY_Device_Parent' -EA SilentlyContinue).Data } catch { $null }
+    if ($par) { $id2 = $par }
+  }
+  $paths = try { (Get-PnpDeviceProperty -InstanceId $id2 -KeyName 'DEVPKEY_Device_LocationPaths' -EA SilentlyContinue).Data } catch { $null }
+  $pn = $null
+  if ($paths) {
+    $p = if ($paths -is [array]) { $paths[0] } else { [string]$paths }
+    $mm = [regex]::Matches($p,'USB\((\d+)\)')
+    if ($mm.Count -gt 0) { $pn = [int]$mm[$mm.Count-1].Groups[1].Value }
+  }
+  if (-not $pn) {
+    $loc = $d.LocationInformation
+    if ($loc -match 'Port_#(\d+)') { $pn = [int]$Matches[1] }
+    elseif ($loc -match '\.(\d+)$') { $pn = [int]$Matches[1] }
+  }
+  if ($pn -and $pn -gt 0) { "USB$pn" }
+}
+"""
             out = subprocess.check_output(
-                ["powershell", "-NoProfile", "-Command",
-                 "Get-PnpDevice -Class USB,USBSTOR,DiskDrive,WPD -Status OK "
-                 "| Where-Object { $_.FriendlyName -notmatch "
-                 "'Hub|Host Controller|Root|Composite|Input Device|Keyboard|Mouse|HID' } "
-                 "| Select-Object -ExpandProperty FriendlyName"],
-                text=True, timeout=10, **_SUBPROCESS_KWARGS
+                ["powershell", "-NoProfile", "-Command", ps_script],
+                text=True, timeout=15, **_SUBPROCESS_KWARGS
             )
+            seen = set()
             for line in out.splitlines():
                 name = line.strip()
-                if name and _is_external(name):
+                if name and name not in seen:
+                    seen.add(name)
                     devices.append(name)
+            devices.sort(key=lambda x: int(re.sub(r'\D', '', x) or 0))
 
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         pass
