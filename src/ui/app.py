@@ -295,7 +295,7 @@ class SoftSupportApp(ctk.CTk):
         row += 1
 
         # --- VPN Status bar ---
-        self.vpn_bar = ctk.CTkFrame(self, fg_color=self.GREEN, corner_radius=0, height=32)
+        self.vpn_bar = ctk.CTkFrame(self, fg_color=self.GREEN, corner_radius=10, height=32)
         self.vpn_bar.grid(row=row, column=0, padx=10, pady=(10, 10), sticky="ew")
         self.vpn_bar.grid_columnconfigure(0, weight=1)
 
