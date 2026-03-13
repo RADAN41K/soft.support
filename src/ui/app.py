@@ -384,10 +384,25 @@ class SoftSupportApp(ctk.CTk):
 
         self.ports_text.configure(state="disabled")
 
+        # Update ports header with count
+        port_count = len(serial_ports) + len(usb_devices)
+        arrow = "\u25BC" if self._ports_expanded else "\u25B6"
+        self.btn_toggle_ports.configure(
+            text=f"{arrow}  USB / COM порти ({port_count})")
+
         # Network
         self.lbl_local_ip.configure(text=local_ip)
         self.lbl_netbird.configure(text=netbird_ip)
         self.lbl_radmin.configure(text=radmin_ip)
+
+        # Update network header with count
+        net_count = sum(1 for ip in [local_ip, netbird_ip, radmin_ip]
+                        if ip not in ("—", "Н/Д", "Не підключений",
+                                      "Не подключён")
+                        and not ip.startswith("Помилка"))
+        arrow = "\u25BC" if self._net_expanded else "\u25B6"
+        self.btn_toggle_net.configure(
+            text=f"{arrow}  Мережа ({net_count})")
 
         # VPN bar
         if vpn_on:
@@ -408,26 +423,35 @@ class SoftSupportApp(ctk.CTk):
 
     # --- Toggle sections ---
     def _toggle_ports(self):
+        # Extract current count from button text
+        cur = self.btn_toggle_ports.cget("text")
+        count_part = cur[cur.rfind("("):] if "(" in cur else ""
         if self._ports_expanded:
             self.ports_content.grid_forget()
-            self.btn_toggle_ports.configure(text="\u25B6  USB / COM порти")
+            self.btn_toggle_ports.configure(
+                text=f"\u25B6  USB / COM порти {count_part}".rstrip())
             self._ports_expanded = False
         else:
             self.ports_content.grid(row=self._ports_row, column=0, padx=10,
                                     pady=(5, 0), sticky="ew")
-            self.btn_toggle_ports.configure(text="\u25BC  USB / COM порти")
+            self.btn_toggle_ports.configure(
+                text=f"\u25BC  USB / COM порти {count_part}".rstrip())
             self._ports_expanded = True
         self._fit_height()
 
     def _toggle_net(self):
+        cur = self.btn_toggle_net.cget("text")
+        count_part = cur[cur.rfind("("):] if "(" in cur else ""
         if self._net_expanded:
             self.net_content.grid_forget()
-            self.btn_toggle_net.configure(text="\u25B6  Мережа")
+            self.btn_toggle_net.configure(
+                text=f"\u25B6  Мережа {count_part}".rstrip())
             self._net_expanded = False
         else:
             self.net_content.grid(row=self._net_row, column=0, padx=10,
                                   pady=(5, 0), sticky="ew")
-            self.btn_toggle_net.configure(text="\u25BC  Мережа")
+            self.btn_toggle_net.configure(
+                text=f"\u25BC  Мережа {count_part}".rstrip())
             self._net_expanded = True
         self._fit_height()
 
