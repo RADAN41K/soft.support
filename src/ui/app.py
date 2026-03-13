@@ -21,7 +21,8 @@ class SoftSupportApp(ctk.CTk):
         super().__init__()
 
         self.title("Soft Support — LimanSoft")
-        self.minsize(460, 200)
+        self.minsize(340, 200)
+        self.geometry("380x200")
         self._set_icon()
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
@@ -144,7 +145,7 @@ class SoftSupportApp(ctk.CTk):
 
         # --- Block 1: Client / Branding ---
         self.client_frame = ctk.CTkFrame(self, fg_color=self.ORANGE, corner_radius=10)
-        self.client_frame.grid(row=row, column=0, padx=10, pady=(10, 5), sticky="ew")
+        self.client_frame.grid(row=row, column=0, padx=10, pady=(10, 0), sticky="ew")
         self.client_frame.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(self.client_frame, text="Технiчна пiдтримка LimanSoft",
@@ -206,7 +207,7 @@ class SoftSupportApp(ctk.CTk):
         # --- Block 2: Ports (collapsible) ---
         self.ports_header = ctk.CTkFrame(self, fg_color=self.WHITE, border_width=1,
                                           border_color="#E0E0E0", corner_radius=10)
-        self.ports_header.grid(row=row, column=0, padx=10, pady=(5, 0), sticky="ew")
+        self.ports_header.grid(row=row, column=0, padx=10, pady=(10, 0), sticky="ew")
         self.ports_header.grid_columnconfigure(0, weight=1)
 
         self.btn_toggle_ports = ctk.CTkButton(
@@ -220,7 +221,7 @@ class SoftSupportApp(ctk.CTk):
         row += 1
 
         self.ports_content = ctk.CTkFrame(self, fg_color=self.WHITE, border_width=1,
-                                           border_color="#E0E0E0", corner_radius=0)
+                                           border_color="#E0E0E0", corner_radius=10)
         self.ports_content.grid_columnconfigure(0, weight=1)
         self._ports_row = row
 
@@ -232,7 +233,7 @@ class SoftSupportApp(ctk.CTk):
         # --- Block 3: Network (collapsible) ---
         self.net_header = ctk.CTkFrame(self, fg_color=self.WHITE, border_width=1,
                                         border_color="#E0E0E0", corner_radius=10)
-        self.net_header.grid(row=row, column=0, padx=10, pady=(5, 0), sticky="ew")
+        self.net_header.grid(row=row, column=0, padx=10, pady=(10, 0), sticky="ew")
         self.net_header.grid_columnconfigure(0, weight=1)
 
         self.btn_toggle_net = ctk.CTkButton(
@@ -246,7 +247,7 @@ class SoftSupportApp(ctk.CTk):
         row += 1
 
         self.net_content = ctk.CTkFrame(self, fg_color=self.WHITE, border_width=1,
-                                         border_color="#E0E0E0", corner_radius=0)
+                                         border_color="#E0E0E0", corner_radius=10)
         self.net_content.grid_columnconfigure(1, weight=1)
         self._net_row = row
 
@@ -274,8 +275,8 @@ class SoftSupportApp(ctk.CTk):
         row += 1
 
         # --- VPN Status bar ---
-        self.vpn_bar = ctk.CTkFrame(self, fg_color=self.GREEN, corner_radius=8, height=32)
-        self.vpn_bar.grid(row=row, column=0, padx=10, pady=(5, 0), sticky="ew")
+        self.vpn_bar = ctk.CTkFrame(self, fg_color=self.GREEN, corner_radius=0, height=32)
+        self.vpn_bar.grid(row=row, column=0, padx=10, pady=(10, 10), sticky="ew")
         self.vpn_bar.grid_columnconfigure(0, weight=1)
 
         self.lbl_vpn_status = ctk.CTkLabel(
@@ -393,7 +394,7 @@ class SoftSupportApp(ctk.CTk):
             self._ports_expanded = False
         else:
             self.ports_content.grid(row=self._ports_row, column=0, padx=10,
-                                    pady=(0, 0), sticky="ew")
+                                    pady=(5, 0), sticky="ew")
             self.btn_toggle_ports.configure(text="\u25BC  USB / COM порти")
             self._ports_expanded = True
         self._fit_height()
@@ -405,7 +406,7 @@ class SoftSupportApp(ctk.CTk):
             self._net_expanded = False
         else:
             self.net_content.grid(row=self._net_row, column=0, padx=10,
-                                  pady=(0, 0), sticky="ew")
+                                  pady=(5, 0), sticky="ew")
             self.btn_toggle_net.configure(text="\u25BC  Мережа")
             self._net_expanded = True
         self._fit_height()
