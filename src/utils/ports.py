@@ -5,9 +5,12 @@ import serial.tools.list_ports
 
 
 def get_serial_ports():
-    """Get list of COM/serial ports with status."""
+    """Get list of physical COM/serial ports (filter out internal)."""
     ports = []
     for port in serial.tools.list_ports.comports():
+        lower = f"{port.device} {port.description}".lower()
+        if any(kw in lower for kw in INTERNAL_SERIAL_KEYWORDS):
+            continue
         ports.append({
             "device": port.device,
             "description": port.description,
@@ -15,6 +18,11 @@ def get_serial_ports():
         })
     return ports
 
+
+INTERNAL_SERIAL_KEYWORDS = [
+    "debug-console", "bluetooth", "wlan", "internal",
+    "built-in", "btusb", "bthusb",
+]
 
 INTERNAL_USB_KEYWORDS = [
     "hub", "host controller", "root hub", "usb bus", "hsic",
