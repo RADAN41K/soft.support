@@ -563,6 +563,21 @@ class SoftSupportApp(ctk.CTk):
         entry_code.grid(row=1, column=0, padx=20, pady=(0, 5))
         entry_code.focus()
 
+        # Fix paste with non-Latin keyboard layouts (Ctrl+V / Cmd+V)
+        def _paste(event):
+            try:
+                text = dialog.clipboard_get()
+                entry_code.delete(0, "end")
+                entry_code.insert(0, text)
+            except Exception:
+                pass
+            return "break"
+
+        entry_code.bind("<Control-v>", _paste)
+        entry_code.bind("<Control-V>", _paste)
+        entry_code.bind("<Command-v>", _paste)
+        entry_code.bind("<Command-V>", _paste)
+
         # Pre-fill existing code if any
         existing_code = self.config_data.get("code", "")
         if existing_code:
