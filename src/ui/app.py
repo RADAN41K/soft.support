@@ -10,6 +10,7 @@ from src.utils.qr import generate_qr
 from src.utils.ports import get_serial_ports, get_usb_devices
 from src.utils.network import get_local_ip, get_netbird_ip, get_radmin_ip
 from src.utils.logging import log, log_device
+from src.utils.autostart import is_autostart_enabled, set_autostart
 
 EDIT_PASSWORD = "258456"
 REFRESH_INTERVAL_MS = 3000
@@ -517,7 +518,7 @@ class SoftSupportApp(ctk.CTk):
         """Show dialog for entering POS code."""
         dialog = ctk.CTkToplevel(self)
         dialog.title("LimanSoft — Код торгової точки")
-        dialog.geometry("350x180")
+        dialog.geometry("350x220")
         dialog.attributes("-topmost", True)
         dialog.focus_force()
         dialog.grid_columnconfigure(0, weight=1)
@@ -539,9 +540,16 @@ class SoftSupportApp(ctk.CTk):
         if existing_code:
             entry_code.insert(0, existing_code)
 
+        # Autostart checkbox
+        autostart_var = ctk.BooleanVar(value=is_autostart_enabled())
+        ctk.CTkCheckBox(dialog, text="Автозапуск з системою",
+                        variable=autostart_var,
+                        font=ctk.CTkFont(size=12)).grid(
+            row=2, column=0, padx=20, pady=(5, 0))
+
         lbl_error = ctk.CTkLabel(dialog, text="", text_color=RED,
                                   font=ctk.CTkFont(size=11))
-        lbl_error.grid(row=2, column=0, padx=20)
+        lbl_error.grid(row=3, column=0, padx=20)
 
         def submit():
             code = entry_code.get().strip().lower()
@@ -557,6 +565,11 @@ class SoftSupportApp(ctk.CTk):
                 save_config(api_data)
                 self.config_data = api_data
                 self._apply_config()
+                try:
+                    set_autostart(autostart_var.get())
+                    log(f"Автозапуск: {'увімкнено' if autostart_var.get() else 'вимкнено'}")
+                except Exception as e:
+                    log(f"Помилка автозапуску: {e}", "WARN")
                 log(f"Код '{code}' прийнято, дані завантажено з API")
                 dialog.destroy()
                 self.attributes("-topmost", True)
@@ -574,7 +587,7 @@ class SoftSupportApp(ctk.CTk):
 
         ctk.CTkButton(dialog, text="Пiдтвердити", width=160,
                       fg_color=ORANGE, hover_color=DARK_ORANGE,
-                      command=submit).grid(row=3, column=0, pady=(5, 20))
+                      command=submit).grid(row=4, column=0, pady=(5, 20))
 
 
 def _bind_entry_shortcuts(dialog, entry):

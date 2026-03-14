@@ -25,6 +25,10 @@ Name: "{autodesktop}\Soft Support"; Filename: "{app}\SoftSupport.exe"; IconFilen
 
 [Tasks]
 Name: "desktopicon"; Description: "Створити ярлик на робочому столi"; GroupDescription: "Додатковi дiї:"
+Name: "autostart"; Description: "Запускати при завантаженнi Windows"; GroupDescription: "Додатковi дiї:"
+
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SoftSupport"; ValueData: """{app}\SoftSupport.exe"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
 Filename: "{app}\SoftSupport.exe"; Description: "Запустити Soft Support"; Flags: nowait postinstall skipifsilent
