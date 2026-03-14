@@ -1,4 +1,3 @@
-import json
 import os
 import platform
 import sys
@@ -6,7 +5,7 @@ import threading
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
-from src.config import get_base_path, load_config
+from src.config import get_base_path, load_or_fetch_config, fetch_from_api, save_config
 from src.utils.qr import generate_qr
 from src.utils.ports import get_serial_ports, get_usb_devices
 from src.utils.network import get_local_ip, get_netbird_ip, get_radmin_ip
@@ -20,7 +19,7 @@ class SoftSupportApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Soft Support — LimanSoft")
+        self.title("LimanSoft — Support")
         self.minsize(340, 200)
         self.geometry("380x200")
         self._set_icon()
@@ -495,18 +494,33 @@ class SoftSupportApp(ctk.CTk):
     # --- Load config ---
     def _load_data(self):
         try:
-            self.config_data = load_config()
+            config, is_new = load_or_fetch_config()
         except Exception as e:
             self.config_data = {}
             self.lbl_client_id.configure(text=f"Помилка: {e}")
             log(f"Помилка завантаження конфігу: {e}", "ERROR")
             return
 
-        self.lbl_client_id.configure(
-            text=self.config_data.get("client_id", "—"))
+        if is_new or config is None:
+            # No config — prompt for code
+            self.config_data = {}
+            self.lbl_client_id.configure(text="Введiть код")
+            self.lbl_phone.configure(text="—")
+            self.after(500, self._prompt_code_input)
+            return
+
+        self.config_data = config
+        self._apply_config()
+
+    def _apply_config(self):
+        """Update UI with current config data."""
+        pos_id = self.config_data.get("pos_id", "")
+        shop_name = self.config_data.get("shop_name", "—")
+        display_name = f"#{pos_id} {shop_name}" if pos_id else shop_name
+        self.lbl_client_id.configure(text=display_name)
         self.lbl_phone.configure(
             text=self.config_data.get("support_phone", "—"))
-        log(f"Клієнт: {self.config_data.get('client_id')} | "
+        log(f"Клієнт: {display_name} | "
             f"Телефон: {self.config_data.get('support_phone')}")
 
         tg_link = self.config_data.get("telegram_link", "")
@@ -515,6 +529,81 @@ class SoftSupportApp(ctk.CTk):
             self._qr_image = ctk.CTkImage(
                 light_image=qr_img, dark_image=qr_img, size=(140, 140))
             self.lbl_qr.configure(image=self._qr_image, text="")
+
+    def _prompt_code_input(self):
+        """Show code input dialog (requires password)."""
+        self.attributes("-topmost", False)
+
+        pwd_dialog = ctk.CTkInputDialog(
+            text="Введiть пароль технiка:", title="Доступ")
+        pwd = pwd_dialog.get_input()
+        if pwd != EDIT_PASSWORD:
+            if pwd is not None:
+                log("Невдала спроба входу", "WARN")
+            self.attributes("-topmost", True)
+            return
+
+        self._show_code_dialog()
+
+    def _show_code_dialog(self):
+        """Show dialog for entering POS code."""
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("LimanSoft — Код торгової точки")
+        dialog.geometry("350x180")
+        dialog.attributes("-topmost", True)
+        dialog.focus_force()
+        dialog.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(dialog, text="Введiть код торгової точки (8 символiв):",
+                     font=ctk.CTkFont(weight="bold")).grid(
+            row=0, column=0, padx=20, pady=(20, 5))
+
+        entry_code = ctk.CTkEntry(dialog, width=200, justify="center",
+                                   font=ctk.CTkFont(size=16))
+        entry_code.grid(row=1, column=0, padx=20, pady=(0, 5))
+        entry_code.focus()
+
+        # Pre-fill existing code if any
+        existing_code = self.config_data.get("code", "")
+        if existing_code:
+            entry_code.insert(0, existing_code)
+
+        self.lbl_code_error = ctk.CTkLabel(dialog, text="",
+                                            text_color=self.RED,
+                                            font=ctk.CTkFont(size=11))
+        self.lbl_code_error.grid(row=2, column=0, padx=20)
+
+        def submit():
+            code = entry_code.get().strip().lower()
+            if len(code) != 8:
+                self.lbl_code_error.configure(text="Код має бути 8 символiв")
+                return
+
+            self.lbl_code_error.configure(text="Завантаження...")
+            dialog.update()
+
+            api_data = fetch_from_api(code)
+            if api_data:
+                save_config(api_data)
+                self.config_data = api_data
+                self._apply_config()
+                log(f"Код '{code}' прийнято, дані завантажено з API")
+                dialog.destroy()
+                self.attributes("-topmost", True)
+                self._fit_height()
+            else:
+                self.lbl_code_error.configure(text="Код не знайдено або помилка з'єднання")
+
+        def on_close():
+            dialog.destroy()
+            self.attributes("-topmost", True)
+
+        dialog.protocol("WM_DELETE_WINDOW", on_close)
+        entry_code.bind("<Return>", lambda e: submit())
+
+        ctk.CTkButton(dialog, text="Пiдтвердити", width=160,
+                      fg_color=self.ORANGE, hover_color=self.DARK_ORANGE,
+                      command=submit).grid(row=3, column=0, pady=(5, 20))
 
     # --- Config editor ---
     def _open_config_editor(self):
@@ -531,70 +620,4 @@ class SoftSupportApp(ctk.CTk):
             return
 
         log("Відкрито редактор налаштувань")
-        editor = ctk.CTkToplevel(self)
-        editor.title("Налаштування клiєнта — LimanSoft")
-        editor.geometry("400x300")
-        editor.attributes("-topmost", True)
-        editor.focus_force()
-
-        editor.grid_columnconfigure(0, weight=1)
-
-        ctk.CTkLabel(editor, text="Клiєнт (назва):",
-                     font=ctk.CTkFont(weight="bold")).grid(
-            row=0, column=0, padx=20, pady=(20, 2), sticky="w")
-        entry_client = ctk.CTkEntry(editor, width=360)
-        entry_client.insert(0, self.config_data.get("client_id", ""))
-        entry_client.grid(row=1, column=0, padx=20, pady=(0, 10))
-
-        ctk.CTkLabel(editor, text="QR посилання (Telegram):",
-                     font=ctk.CTkFont(weight="bold")).grid(
-            row=2, column=0, padx=20, pady=(0, 2), sticky="w")
-        entry_link = ctk.CTkEntry(editor, width=360)
-        entry_link.insert(0, self.config_data.get("telegram_link", ""))
-        entry_link.grid(row=3, column=0, padx=20, pady=(0, 10))
-
-        ctk.CTkLabel(editor, text="Телефон пiдтримки:",
-                     font=ctk.CTkFont(weight="bold")).grid(
-            row=4, column=0, padx=20, pady=(0, 2), sticky="w")
-        entry_phone = ctk.CTkEntry(editor, width=360)
-        entry_phone.insert(0, self.config_data.get("support_phone", ""))
-        entry_phone.grid(row=5, column=0, padx=20, pady=(0, 20))
-
-        def save():
-            new_data = {
-                "client_id": entry_client.get().strip(),
-                "telegram_link": entry_link.get().strip(),
-                "support_phone": entry_phone.get().strip(),
-            }
-            if not all(new_data.values()):
-                return
-
-            config_path = os.path.join(get_base_path(), "config.json")
-            with open(config_path, "w", encoding="utf-8") as f:
-                json.dump(new_data, f, ensure_ascii=False, indent=4)
-
-            self.config_data = new_data
-            self.lbl_client_id.configure(text=new_data["client_id"])
-            self.lbl_phone.configure(text=new_data["support_phone"])
-            log(f"Конфіг оновлено: Клієнт={new_data['client_id']}, "
-                f"Телефон={new_data['support_phone']}")
-
-            # Regenerate QR
-            if new_data["telegram_link"]:
-                qr_img = generate_qr(new_data["telegram_link"], size=140)
-                self._qr_image = ctk.CTkImage(
-                    light_image=qr_img, dark_image=qr_img, size=(140, 140))
-                self.lbl_qr.configure(image=self._qr_image, text="")
-
-            editor.destroy()
-            self.attributes("-topmost", True)
-
-        def on_editor_close():
-            editor.destroy()
-            self.attributes("-topmost", True)
-
-        editor.protocol("WM_DELETE_WINDOW", on_editor_close)
-
-        ctk.CTkButton(editor, text="Зберегти", width=160,
-                      fg_color=self.ORANGE, hover_color=self.DARK_ORANGE,
-                      command=save).grid(row=6, column=0, pady=(0, 20))
+        self._show_code_dialog()
