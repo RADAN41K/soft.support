@@ -563,20 +563,58 @@ class SoftSupportApp(ctk.CTk):
         entry_code.grid(row=1, column=0, padx=20, pady=(0, 5))
         entry_code.focus()
 
-        # Fix paste with non-Latin keyboard layouts (Ctrl+V / Cmd+V)
-        def _paste(event):
+        # Fix paste/select-all with non-Latin keyboard layouts on macOS
+        def _paste(event=None):
             try:
                 text = dialog.clipboard_get()
-                entry_code.delete(0, "end")
-                entry_code.insert(0, text)
+                try:
+                    entry_code.delete("sel.first", "sel.last")
+                except Exception:
+                    pass
+                entry_code.insert("insert", text)
             except Exception:
                 pass
             return "break"
 
-        entry_code.bind("<Control-v>", _paste)
-        entry_code.bind("<Control-V>", _paste)
-        entry_code.bind("<Command-v>", _paste)
-        entry_code.bind("<Command-V>", _paste)
+        def _select_all(event=None):
+            entry_code.select_range(0, "end")
+            entry_code.icursor("end")
+            return "break"
+
+        def _cut(event=None):
+            try:
+                text = entry_code.selection_get()
+                dialog.clipboard_clear()
+                dialog.clipboard_append(text)
+                entry_code.delete("sel.first", "sel.last")
+            except Exception:
+                pass
+            return "break"
+
+        def _copy(event=None):
+            try:
+                text = entry_code.selection_get()
+                dialog.clipboard_clear()
+                dialog.clipboard_append(text)
+            except Exception:
+                pass
+            return "break"
+
+        # Handle Cmd/Ctrl shortcuts on any keyboard layout
+        # On macOS Russian layout, keysym=Cyrillic_em but char='v'
+        _ACTIONS = {"v": _paste, "a": _select_all, "c": _copy, "x": _cut}
+
+        def _on_key(event):
+            # state & 0x8 = Cmd on macOS, state & 0x4 = Ctrl
+            if not (event.state & 0x8 or event.state & 0x4):
+                return
+            key = event.char.lower() if event.char else ""
+            action = _ACTIONS.get(key)
+            if action:
+                return action(event)
+
+        for widget in (entry_code, entry_code._entry):
+            widget.bind("<Key>", _on_key)
 
         # Pre-fill existing code if any
         existing_code = self.config_data.get("code", "")
