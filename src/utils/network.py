@@ -2,13 +2,7 @@ import platform
 import socket
 import subprocess
 
-# Hide console window on Windows
-_SUBPROCESS_KWARGS = {}
-if platform.system() == "Windows":
-    _SUBPROCESS_KWARGS["creationflags"] = (
-        subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW")
-        else 0x08000000
-    )
+from src.utils.platform_utils import SUBPROCESS_KWARGS as _SUBPROCESS_KWARGS
 
 
 def get_local_ip():
