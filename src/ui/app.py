@@ -6,11 +6,13 @@ import customtkinter as ctk
 from PIL import Image, ImageTk
 
 from src.config import load_or_fetch_config, fetch_from_api, save_config
+from src.version import __version__
 from src.utils.qr import generate_qr
 from src.utils.ports import get_serial_ports, get_usb_devices
 from src.utils.network import get_local_ip, get_netbird_ip, get_radmin_ip
 from src.utils.logging import log, log_device, get_log_dir
 from src.utils.autostart import is_autostart_enabled, set_autostart
+from src.utils.updater import check_and_apply_silently
 
 EDIT_PASSWORD = "258456"
 REFRESH_INTERVAL_MS = 3000
@@ -71,7 +73,10 @@ class SoftSupportApp(ctk.CTk):
         self.after(100, self._fit_height)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
-        log("Форму запущено, додаток готовий до роботи")
+        log(f"Форму запущено v{__version__}, додаток готовий до роботи")
+
+        # Check for updates silently in background
+        check_and_apply_silently()
 
     def run(self):
         """Start the application."""

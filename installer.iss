@@ -3,9 +3,9 @@
 
 [Setup]
 AppName=LimanSoft Support
-AppVersion=1.0.1
+AppVersion={#AppVer}
 AppPublisher=LimanSoft
-DefaultDirName={sd}\LimanSoftSupport
+DefaultDirName={localappdata}\LimanSoftSupport
 DefaultGroupName=LimanSoft Support
 PrivilegesRequired=lowest
 OutputDir=dist
