@@ -108,7 +108,7 @@ def _set_autostart_linux(enabled):
         exe = _get_exe_path()
         content = f"""[Desktop Entry]
 Type=Application
-Name=Soft Support
+Name=LimanSoft Support
 Exec={exe}
 Hidden=false
 NoDisplay=false

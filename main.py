@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Soft Support — LimanSoft tech support utility.
+"""LimanSoft Support — tech support utility.
 
 Single-instance entry point with logging and cleanup.
 """

@@ -41,7 +41,7 @@ class SoftSupportApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("LimanSoft — Support")
+        self.title("LimanSoft Support")
         self.minsize(340, 200)
         self.geometry("380x200")
         self._set_icon()

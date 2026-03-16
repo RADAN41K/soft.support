@@ -73,7 +73,7 @@ if system == "Darwin":
         bundle_identifier="com.limansoft.softsupport",
         info_plist={
             "CFBundleShortVersionString": "1.0.0",
-            "CFBundleName": "Soft Support",
+            "CFBundleName": "LimanSoft Support",
             "NSHighResolutionCapable": True,
         },
     )

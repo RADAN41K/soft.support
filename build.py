@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform build script for Soft Support.
+"""Cross-platform build script for LimanSoft Support.
 
 Usage:
     python build.py          # Build for current platform
@@ -57,7 +57,7 @@ def _create_dmg():
     if shutil.which("create-dmg"):
         subprocess.run([
             "create-dmg",
-            "--volname", "Soft Support",
+            "--volname", "LimanSoft Support",
             "--window-size", "500", "350",
             "--icon-size", "80",
             "--icon", "SoftSupport.app", "125", "175",
@@ -89,7 +89,7 @@ def _create_desktop_file():
     content = f"""[Desktop Entry]
 Version=1.0
 Type=Application
-Name=Soft Support
+Name=LimanSoft Support
 Comment=LimanSoft Tech Support Utility
 Exec={binary}
 Icon={icon}
