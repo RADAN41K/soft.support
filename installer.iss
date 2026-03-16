@@ -5,7 +5,7 @@
 AppName=LimanSoft Support
 AppVersion=1.0.0
 AppPublisher=LimanSoft
-DefaultDirName={pf}\LimanSoftSupport
+DefaultDirName={autopf}\LimanSoftSupport
 DefaultGroupName=LimanSoft Support
 OutputDir=dist
 OutputBaseFilename=SoftSupport_Setup
@@ -28,9 +28,6 @@ Name: "autostart"; Description: "Запускати при завантажен�
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SoftSupport"; ValueData: """{app}\SoftSupport.exe"""; Flags: uninsdeletevalue; Tasks: autostart
-
-[UninstallDelete]
-Type: filesandordirs; Name: "{%APPDATA}\LimanSoft"
 
 [Run]
 Filename: "{app}\SoftSupport.exe"; Description: "Запустити LimanSoft Support"; Flags: nowait postinstall skipifsilent
