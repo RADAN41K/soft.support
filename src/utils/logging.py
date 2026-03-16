@@ -1,6 +1,10 @@
 """File-based logging for LimanSoft tech support.
 
-Logs are stored next to the executable (or project root in dev mode).
+Logs are stored in platform-specific directories:
+- Windows: %APPDATA%/LimanSoft/logs
+- macOS: ~/Library/Logs/LimanSoft
+- Linux: ~/.local/share/LimanSoft/logs
+
 Auto-cleanup removes logs older than 30 days.
 """
 import os
@@ -8,11 +12,21 @@ import glob
 import platform
 from datetime import datetime, timedelta
 
-from src.config import get_base_path
+
+def get_log_dir():
+    """Public accessor for log directory path."""
+    return _log_dir()
 
 
 def _log_dir():
-    return os.path.join(get_base_path(), "logs")
+    system = platform.system()
+    if system == "Windows":
+        base = os.environ.get("APPDATA", os.path.expanduser("~"))
+        return os.path.join(base, "LimanSoft", "logs")
+    elif system == "Darwin":
+        return os.path.join(os.path.expanduser("~"), "Library", "Logs", "LimanSoft")
+    else:
+        return os.path.join(os.path.expanduser("~"), ".local", "share", "LimanSoft", "logs")
 
 
 def _ensure_dir():

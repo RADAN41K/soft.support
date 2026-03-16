@@ -5,11 +5,11 @@ import threading
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
-from src.config import get_base_path, load_or_fetch_config, fetch_from_api, save_config
+from src.config import load_or_fetch_config, fetch_from_api, save_config
 from src.utils.qr import generate_qr
 from src.utils.ports import get_serial_ports, get_usb_devices
 from src.utils.network import get_local_ip, get_netbird_ip, get_radmin_ip
-from src.utils.logging import log, log_device
+from src.utils.logging import log, log_device, get_log_dir
 from src.utils.autostart import is_autostart_enabled, set_autostart
 
 EDIT_PASSWORD = "258456"
@@ -126,7 +126,10 @@ class SoftSupportApp(ctk.CTk):
         self.after(0, self._show_window)
 
     def _tray_open_logs(self, *_args):
-        log_dir = os.path.join(get_base_path(), "logs")
+        self._open_log_folder()
+
+    def _open_log_folder(self):
+        log_dir = get_log_dir()
         os.makedirs(log_dir, exist_ok=True)
         system = platform.system()
         if system == "Darwin":
@@ -216,12 +219,22 @@ class SoftSupportApp(ctk.CTk):
                                        text_color=WHITE)
         self.lbl_phone.grid(row=2, column=0, sticky="w")
 
+        btn_row = ctk.CTkFrame(right, fg_color="transparent")
+        btn_row.grid(row=3, column=0, sticky="w", pady=(4, 0))
+
         self.btn_edit = ctk.CTkButton(
-            right, text="Редагувати", width=80, height=22,
+            btn_row, text="Редагувати", width=80, height=22,
             fg_color=DARK_ORANGE, hover_color="#CC5500",
             font=ctk.CTkFont(size=10),
             command=self._open_config_editor)
-        self.btn_edit.grid(row=3, column=0, sticky="w", pady=(4, 0))
+        self.btn_edit.grid(row=0, column=0)
+
+        self.btn_logs = ctk.CTkButton(
+            btn_row, text="Логи", width=50, height=22,
+            fg_color=DARK_ORANGE, hover_color="#CC5500",
+            font=ctk.CTkFont(size=10),
+            command=self._open_logs_with_password)
+        self.btn_logs.grid(row=0, column=1, padx=(5, 0))
 
         # Spacer right
         ctk.CTkFrame(self.info_frame, fg_color="transparent", width=1).grid(
@@ -482,6 +495,20 @@ class SoftSupportApp(ctk.CTk):
             self._qr_image = ctk.CTkImage(
                 light_image=qr_img, dark_image=qr_img, size=(140, 140))
             self.lbl_qr.configure(image=self._qr_image, text="")
+
+    # --- Open logs (password protected) ---
+    def _open_logs_with_password(self):
+        self.attributes("-topmost", False)
+        pwd_dialog = ctk.CTkInputDialog(
+            text="Введiть пароль:", title="Доступ до логiв")
+        pwd = pwd_dialog.get_input()
+        if pwd != EDIT_PASSWORD:
+            if pwd is not None:
+                log("Невдала спроба доступу до логів", "WARN")
+            self.attributes("-topmost", True)
+            return
+        self._open_log_folder()
+        self.attributes("-topmost", True)
 
     # --- Config editor ---
     def _open_config_editor(self):
