@@ -3,10 +3,11 @@
 
 [Setup]
 AppName=LimanSoft Support
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=LimanSoft
-DefaultDirName={autopf}\LimanSoftSupport
+DefaultDirName={commonpf}\LimanSoftSupport
 DefaultGroupName=LimanSoft Support
+PrivilegesRequired=admin
 OutputDir=dist
 OutputBaseFilename=SoftSupport_Setup
 SetupIconFile=assets\icon.ico
@@ -14,6 +15,7 @@ UninstallDisplayIcon={app}\SoftSupport.exe
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+UsedUserAreasWarning=no
 
 [Files]
 Source: "dist\SoftSupport.exe"; DestDir: "{app}"; Flags: ignoreversion
