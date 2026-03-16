@@ -670,13 +670,20 @@ def _bind_entry_shortcuts(dialog, entry):
             pass
         return "break"
 
-    actions = {"v": _paste, "a": _select_all, "c": _copy, "x": _cut}
+    actions_by_char = {"v": _paste, "a": _select_all, "c": _copy, "x": _cut}
+    # Windows keycodes for V/A/C/X (work regardless of keyboard layout)
+    actions_by_keycode = {86: _paste, 65: _select_all, 67: _copy, 88: _cut}
 
     def _on_key(event):
-        if not (event.state & 0x8 or event.state & 0x4):
+        # Check Ctrl (0x4) or Cmd (0x8)
+        if not (event.state & 0x4 or event.state & 0x8):
             return
+        # Try by char first (works on macOS with any layout)
         key = event.char.lower() if event.char else ""
-        action = actions.get(key)
+        action = actions_by_char.get(key)
+        # Fallback to keycode (works on Windows with non-Latin layouts)
+        if not action:
+            action = actions_by_keycode.get(event.keycode)
         if action:
             return action(event)
 
