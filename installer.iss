@@ -17,7 +17,6 @@ WizardStyle=modern
 
 [Files]
 Source: "dist\SoftSupport.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "config.json"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Soft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"
@@ -29,6 +28,9 @@ Name: "autostart"; Description: "Запускати при завантажен�
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SoftSupport"; ValueData: """{app}\SoftSupport.exe"""; Flags: uninsdeletevalue; Tasks: autostart
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{userappdata}\LimanSoft"
 
 [Run]
 Filename: "{app}\SoftSupport.exe"; Description: "Запустити Soft Support"; Flags: nowait postinstall skipifsilent
