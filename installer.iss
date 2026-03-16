@@ -20,7 +20,7 @@ Source: "dist\SoftSupport.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\LimanSoft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"
-Name: "{autodesktop}\LimanSoft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"; Tasks: desktopicon
+Name: "{commondesktop}\LimanSoft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Створити ярлик на робочому столi"; GroupDescription: "Додатковi дiї:"
@@ -30,7 +30,7 @@ Name: "autostart"; Description: "Запускати при завантажен�
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SoftSupport"; ValueData: """{app}\SoftSupport.exe"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{userappdata}\LimanSoft"
+Type: filesandordirs; Name: "{%APPDATA}\LimanSoft"
 
 [Run]
 Filename: "{app}\SoftSupport.exe"; Description: "Запустити LimanSoft Support"; Flags: nowait postinstall skipifsilent
