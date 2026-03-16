@@ -84,10 +84,15 @@ class SoftSupportApp(ctk.CTk):
         else:
             base = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         icon_png = os.path.join(base, "assets", "icon.png")
-        if os.path.exists(icon_png):
+        icon_ico = os.path.join(base, "assets", "icon.ico")
+        # Windows: use .ico for taskbar and title bar icon
+        if platform.system() == "Windows" and os.path.exists(icon_ico):
+            self.iconbitmap(icon_ico)
+        elif os.path.exists(icon_png):
             img = Image.open(icon_png)
             self._icon = ImageTk.PhotoImage(img)
             self.iconphoto(True, self._icon)
+        if os.path.exists(icon_png):
             self._icon_path = icon_png
 
     # --- System tray ---
