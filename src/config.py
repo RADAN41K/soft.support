@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import sys
 import urllib.request
 import urllib.error
@@ -7,25 +8,39 @@ import urllib.error
 API_URL = "https://limansoft.com/api/v1/pos/"
 
 
-def get_base_path():
-    """Get base path for config file (works with PyInstaller).
+def get_data_dir():
+    """Get platform-specific data directory for config and other files.
 
-    On macOS .app bundle, executable is inside
-    SoftSupport.app/Contents/MacOS/ — config.json should be
-    next to the .app bundle, not inside it.
+    - Windows: %APPDATA%/LimanSoft
+    - macOS: ~/Library/Application Support/LimanSoft
+    - Linux: ~/.local/share/LimanSoft
+    - Dev mode (not frozen): project root
     """
-    if getattr(sys, "frozen", False):
-        exe_dir = os.path.dirname(sys.executable)
-        # macOS .app bundle: go up from Contents/MacOS to .app parent
-        if exe_dir.endswith("Contents/MacOS"):
-            return os.path.dirname(os.path.dirname(os.path.dirname(exe_dir)))
-        return exe_dir
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if not getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    system = platform.system()
+    if system == "Windows":
+        base = os.environ.get("APPDATA", os.path.expanduser("~"))
+        path = os.path.join(base, "LimanSoft")
+    elif system == "Darwin":
+        path = os.path.join(os.path.expanduser("~"),
+                            "Library", "Application Support", "LimanSoft")
+    else:
+        path = os.path.join(os.path.expanduser("~"),
+                            ".local", "share", "LimanSoft")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def get_base_path():
+    """Legacy alias for get_data_dir."""
+    return get_data_dir()
 
 
 def get_config_path():
     """Get full path to config.json."""
-    return os.path.join(get_base_path(), "config.json")
+    return os.path.join(get_data_dir(), "config.json")
 
 
 def load_config():
