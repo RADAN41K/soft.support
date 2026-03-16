@@ -5,9 +5,9 @@
 AppName=LimanSoft Support
 AppVersion=1.0.1
 AppPublisher=LimanSoft
-DefaultDirName={commonpf}\LimanSoftSupport
+DefaultDirName={sd}\LimanSoftSupport
 DefaultGroupName=LimanSoft Support
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 OutputDir=dist
 OutputBaseFilename=SoftSupport_Setup
 SetupIconFile=assets\icon.ico
