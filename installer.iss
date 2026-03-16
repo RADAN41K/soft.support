@@ -5,7 +5,7 @@
 AppName=LimanSoft Support
 AppVersion=1.0.0
 AppPublisher=LimanSoft
-DefaultDirName={autopf}\SoftSupport
+DefaultDirName={pf}\LimanSoftSupport
 DefaultGroupName=LimanSoft Support
 OutputDir=dist
 OutputBaseFilename=SoftSupport_Setup
