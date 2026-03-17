@@ -20,6 +20,8 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 UsedUserAreasWarning=no
+CloseApplications=force
+CloseApplicationsFilter=SoftSupport.exe
 
 [Files]
 Source: "dist\SoftSupport.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -37,3 +39,13 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\SoftSupport.exe"; Description: "Запустити LimanSoft Support"; Flags: nowait postinstall skipifsilent
+
+[Code]
+function InitializeUninstall(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := True;
+  if Exec('taskkill', '/F /IM SoftSupport.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    Sleep(1000);
+end;
