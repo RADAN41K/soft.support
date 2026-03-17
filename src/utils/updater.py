@@ -137,6 +137,7 @@ def _apply_windows(current_exe, new_exe):
     """Create .bat script that waits, replaces exe, and restarts."""
     bat_path = os.path.join(tempfile.gettempdir(), "limansoft_update.bat")
     pid = os.getpid()
+    tmp_dir = tempfile.gettempdir()
     bat_content = f"""@echo off
 :wait
 tasklist /FI "PID eq {pid}" 2>NUL | find /I "{pid}" >NUL
@@ -144,7 +145,8 @@ if not errorlevel 1 (
     ping -n 2 127.0.0.1 >nul
     goto wait
 )
-ping -n 2 127.0.0.1 >nul
+ping -n 3 127.0.0.1 >nul
+for /d %%i in ("{tmp_dir}\\_MEI*") do rd /s /q "%%i" 2>nul
 del /f "{current_exe}"
 move /y "{new_exe}" "{current_exe}"
 start "" "{current_exe}"
