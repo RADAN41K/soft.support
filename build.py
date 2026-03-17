@@ -17,12 +17,10 @@ BUILD = os.path.join(ROOT, "build")
 
 
 def _read_version():
-    """Read version from src/version.py."""
-    version_file = os.path.join(ROOT, "src", "version.py")
+    """Read version from VERSION file."""
+    version_file = os.path.join(ROOT, "VERSION")
     with open(version_file) as f:
-        for line in f:
-            if line.startswith("__version__"):
-                return line.split("=")[1].strip().strip('"').strip("'")
+        return f.read().strip()
     return "0.0.0"
 
 
@@ -53,31 +51,11 @@ def build():
         _create_dmg()
     elif system == "Windows":
         print(f"\nDone! Executable: dist/SoftSupport.exe")
-        _prepare_installer(version)
         print("Run Inno Setup on installer.iss to create installer.")
     else:
         print(f"\nDone! Binary: dist/SoftSupport")
         _create_desktop_file()
 
-
-def _prepare_installer(version):
-    """Update installer.iss with current version from src/version.py."""
-    iss_path = os.path.join(ROOT, "installer.iss")
-    if not os.path.exists(iss_path):
-        return
-    with open(iss_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    # Replace #define or add it at the top
-    define_line = f'#define AppVer "{version}"'
-    if content.startswith("#define AppVer"):
-        lines = content.split("\n")
-        lines[0] = define_line
-        content = "\n".join(lines)
-    else:
-        content = define_line + "\n" + content
-    with open(iss_path, "w", encoding="utf-8") as f:
-        f.write(content)
-    print(f"installer.iss updated with version {version}")
 
 
 def _create_dmg():

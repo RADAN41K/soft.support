@@ -18,7 +18,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ("assets", "assets"),
-        ("config.json", "."),
+        ("VERSION", "."),
     ],
     hiddenimports=[
         "customtkinter",
