@@ -1,7 +1,7 @@
 """Silent auto-updater for LimanSoft Support.
 
-Checks API for new version, downloads exe, verifies SHA256,
-replaces current binary and restarts.
+Checks API for new version, downloads installer, verifies SHA256,
+runs silent install and restarts.
 """
 import hashlib
 import json
@@ -75,10 +75,7 @@ def _verify_sha256(file_path, expected_hash):
 
 
 def apply_update(update_info, on_progress=None):
-    """Download and apply update. Returns True on success.
-
-    on_progress(message) is called with status updates.
-    """
+    """Download and apply update. Returns True on success."""
     download_url = update_info.get("download_url", "")
     expected_sha = update_info.get("sha256", "")
     new_version = update_info.get("version", "?")
@@ -87,17 +84,17 @@ def apply_update(update_info, on_progress=None):
         log("Немає URL для завантаження", "ERROR")
         return False
 
-    try:
-        # Determine current executable path
-        if getattr(sys, "frozen", False):
-            current_exe = sys.executable
-        else:
-            log("Оновлення доступне лише для зібраного додатку")
-            return False
+    if not getattr(sys, "frozen", False):
+        log("Оновлення доступне лише для зібраного додатку")
+        return False
 
-        ext = ".exe" if platform.system() == "Windows" else ""
+    try:
         tmp_dir = tempfile.gettempdir()
-        tmp_file = os.path.join(tmp_dir, f"LimanSoftSupport_update{ext}")
+
+        if platform.system() == "Windows":
+            tmp_file = os.path.join(tmp_dir, "LimanSoftSupport_Setup.exe")
+        else:
+            tmp_file = os.path.join(tmp_dir, "LimanSoftSupport_update")
 
         # Download
         if on_progress:
@@ -115,15 +112,11 @@ def apply_update(update_info, on_progress=None):
                 return False
             log("SHA256 перевірено")
 
-        # Make executable on Unix
-        if platform.system() != "Windows":
-            os.chmod(tmp_file, 0o755)
-
-        # Apply update via helper script
+        # Apply update
         if platform.system() == "Windows":
-            _apply_windows(current_exe, tmp_file)
+            _apply_windows(tmp_file)
         else:
-            _apply_unix(current_exe, tmp_file)
+            _apply_unix(sys.executable, tmp_file)
 
         log(f"Оновлення до v{new_version} застосовано, перезапуск...")
         return True
@@ -133,30 +126,12 @@ def apply_update(update_info, on_progress=None):
         return False
 
 
-def _apply_windows(current_exe, new_exe):
-    """Create .bat script that waits, replaces exe, and restarts."""
-    bat_path = os.path.join(tempfile.gettempdir(), "limansoft_update.bat")
-    pid = os.getpid()
-    tmp_dir = tempfile.gettempdir()
-    bat_content = f"""@echo off
-:wait
-tasklist /FI "PID eq {pid}" 2>NUL | find /I "{pid}" >NUL
-if not errorlevel 1 (
-    ping -n 2 127.0.0.1 >nul
-    goto wait
-)
-ping -n 3 127.0.0.1 >nul
-for /d %%i in ("{tmp_dir}\\_MEI*") do rd /s /q "%%i" 2>nul
-del /f "{current_exe}"
-move /y "{new_exe}" "{current_exe}"
-start "" "{current_exe}"
-del "%~f0"
-"""
-    with open(bat_path, "w", encoding="utf-8") as f:
-        f.write(bat_content)
-
+def _apply_windows(setup_exe):
+    """Run Inno Setup installer silently and exit current process."""
+    log("Запуск тихої установки...")
     subprocess.Popen(
-        ["cmd", "/c", bat_path],
+        [setup_exe, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART",
+         "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS"],
         creationflags=0x08000000 | 0x00000200,
         close_fds=True
     )
@@ -165,6 +140,7 @@ del "%~f0"
 
 def _apply_unix(current_exe, new_exe):
     """Replace binary and restart on macOS/Linux."""
+    os.chmod(new_exe, 0o755)
     sh_path = os.path.join(tempfile.gettempdir(), "limansoft_update.sh")
     sh_content = f"""#!/bin/bash
 sleep 2
