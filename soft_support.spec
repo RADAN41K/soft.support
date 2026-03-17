@@ -66,13 +66,16 @@ exe = EXE(
 
 # macOS .app bundle
 if system == "Darwin":
+    with open("VERSION", "r", encoding="utf-8") as f:
+        app_version = f.read().strip()
+
     app = BUNDLE(
         exe,
         name="SoftSupport.app",
         icon=icon_file,
         bundle_identifier="com.limansoft.softsupport",
         info_plist={
-            "CFBundleShortVersionString": "1.0.0",
+            "CFBundleShortVersionString": app_version,
             "CFBundleName": "LimanSoft Support",
             "NSHighResolutionCapable": True,
         },

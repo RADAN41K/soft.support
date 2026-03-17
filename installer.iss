@@ -1,7 +1,12 @@
 ; Inno Setup script for LimanSoft Support (Windows)
 ; Download Inno Setup: https://jrsoftware.org/isdl.php
 
-#define AppVer Trim(FileRead(SourcePath + "\VERSION"))
+#define FileHandle
+#define AppVer "Def"
+#if FileOpen(FileHandle, "VERSION")
+  #define AppVer FileRead(FileHandle)
+  #expr FileClose(FileHandle)
+#endif
 
 [Setup]
 AppName=LimanSoft Support

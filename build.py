@@ -58,6 +58,7 @@ def build():
 
 
 
+
 def _create_dmg():
     """Create DMG for macOS distribution."""
     app_path = os.path.join(DIST, "SoftSupport.app")
