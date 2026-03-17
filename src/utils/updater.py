@@ -127,11 +127,25 @@ def apply_update(update_info, on_progress=None):
 
 
 def _apply_windows(setup_exe):
-    """Run Inno Setup installer silently and exit current process."""
+    """Run Inno Setup installer silently after current process exits."""
     log("Запуск тихої установки...")
+    pid = os.getpid()
+    bat_path = os.path.join(tempfile.gettempdir(), "limansoft_update.bat")
+    bat_content = f"""@echo off
+:wait
+tasklist /FI "PID eq {pid}" 2>NUL | find /I "{pid}" >NUL
+if not errorlevel 1 (
+    ping -n 2 127.0.0.1 >nul
+    goto wait
+)
+ping -n 2 127.0.0.1 >nul
+start "" "{setup_exe}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /RESTARTAPPLICATIONS
+del "%~f0"
+"""
+    with open(bat_path, "w", encoding="utf-8") as f:
+        f.write(bat_content)
     subprocess.Popen(
-        [setup_exe, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART",
-         "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS"],
+        ["cmd", "/c", bat_path],
         creationflags=0x08000000 | 0x00000200,
         close_fds=True
     )
