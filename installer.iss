@@ -21,8 +21,8 @@ UsedUserAreasWarning=no
 Source: "dist\SoftSupport.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\LimanSoft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"
-Name: "{commondesktop}\LimanSoft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"; Tasks: desktopicon
+Name: "{userprograms}\LimanSoft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"
+Name: "{userdesktop}\LimanSoft Support"; Filename: "{app}\SoftSupport.exe"; IconFilename: "{app}\SoftSupport.exe"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Створити ярлик на робочому столi"; GroupDescription: "Додатковi дiї:"
