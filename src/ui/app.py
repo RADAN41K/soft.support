@@ -230,22 +230,26 @@ class SoftSupportApp(ctk.CTk):
                                        text_color=WHITE)
         self.lbl_phone.grid(row=2, column=0, sticky="w")
 
-        btn_row = ctk.CTkFrame(right, fg_color="transparent")
-        btn_row.grid(row=3, column=0, sticky="w", pady=(4, 0))
-
         self.btn_edit = ctk.CTkButton(
-            btn_row, text="Редагувати", width=80, height=22,
+            right, text="Редагувати", width=80, height=22,
             fg_color=DARK_ORANGE, hover_color="#CC5500",
             font=ctk.CTkFont(size=10),
             command=self._open_config_editor)
-        self.btn_edit.grid(row=0, column=0)
+        self.btn_edit.grid(row=3, column=0, sticky="w", pady=(4, 0))
 
         self.btn_logs = ctk.CTkButton(
-            btn_row, text="Логи", width=50, height=22,
+            right, text="Логи", width=80, height=22,
             fg_color=DARK_ORANGE, hover_color="#CC5500",
             font=ctk.CTkFont(size=10),
             command=self._open_logs_with_password)
-        self.btn_logs.grid(row=0, column=1, padx=(5, 0))
+        self.btn_logs.grid(row=4, column=0, sticky="w", pady=(2, 0))
+
+        self.btn_hide = ctk.CTkButton(
+            right, text="Вихiд", width=80, height=22,
+            fg_color=DARK_ORANGE, hover_color="#CC5500",
+            font=ctk.CTkFont(size=10),
+            command=self._on_close)
+        self.btn_hide.grid(row=5, column=0, sticky="w", pady=(2, 0))
 
         # Spacer right
         ctk.CTkFrame(self.info_frame, fg_color="transparent", width=1).grid(
