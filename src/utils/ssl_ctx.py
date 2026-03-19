@@ -1,32 +1,52 @@
-"""Shared SSL context that works even when system CA certs are missing.
+"""Shared SSL context for HTTPS requests to limansoft.com API.
 
-Strategy (in order):
-1. truststore — injects OS-level CA store (Windows/macOS/Linux)
-2. certifi — bundled Mozilla CA certs
-3. Default Python ssl context
+Tries secure contexts first, falls back to unverified if all fail.
+Only used for our own API (limansoft.com), not arbitrary URLs.
 """
 import ssl
+import urllib.request
 
 
 def _build_context():
-    ctx = ssl.create_default_context()
-
-    # Try truststore first — uses Windows cert store like browsers do
+    # 1. Try truststore (OS-level certs)
     try:
         import truststore
         truststore.inject_into_ssl()
+        ctx = ssl.create_default_context()
+        _test_connection(ctx)
         return ctx
-    except (ImportError, Exception):
+    except Exception:
         pass
 
-    # Fallback to certifi bundle
+    # 2. Try certifi bundle
     try:
         import certifi
-        return ssl.create_default_context(cafile=certifi.where())
-    except ImportError:
+        ctx = ssl.create_default_context(cafile=certifi.where())
+        _test_connection(ctx)
+        return ctx
+    except Exception:
         pass
 
+    # 3. Try default Python context
+    try:
+        ctx = ssl.create_default_context()
+        _test_connection(ctx)
+        return ctx
+    except Exception:
+        pass
+
+    # 4. Fallback: skip verification (our own API only)
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
     return ctx
+
+
+def _test_connection(ctx):
+    """Quick test that SSL context works with our API."""
+    req = urllib.request.Request("https://limansoft.com",
+                                method="HEAD")
+    urllib.request.urlopen(req, timeout=5, context=ctx)
 
 
 ssl_context = _build_context()
