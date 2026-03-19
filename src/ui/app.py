@@ -2,6 +2,7 @@ import os
 import platform
 import sys
 import threading
+import tkinter
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
@@ -688,3 +689,19 @@ def _bind_entry_shortcuts(dialog, entry):
 
     for widget in (entry, entry._entry):
         widget.bind("<Key>", _on_key)
+
+    # Right-click context menu
+    menu = tkinter.Menu(dialog, tearoff=0)
+    menu.add_command(label="Вставити", command=_paste)
+    menu.add_command(label="Копiювати", command=_copy)
+    menu.add_command(label="Вирiзати", command=_cut)
+    menu.add_separator()
+    menu.add_command(label="Видiлити все", command=_select_all)
+
+    def _show_menu(event):
+        menu.tk_popup(event.x_root, event.y_root)
+
+    for widget in (entry, entry._entry):
+        widget.bind("<Button-3>", _show_menu)
+        # macOS right-click (Ctrl+Click)
+        widget.bind("<Button-2>", _show_menu)
