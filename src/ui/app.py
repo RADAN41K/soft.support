@@ -193,10 +193,9 @@ class SoftSupportApp(ctk.CTk):
 
         self.lbl_help_link = ctk.CTkLabel(
             self.client_frame, text="Скануйте QR-код LimanSoft Help 24/7",
-            font=ctk.CTkFont(size=13, underline=True),
-            text_color=WHITE, cursor="hand2")
+            font=ctk.CTkFont(size=13),
+            text_color=WHITE)
         self.lbl_help_link.grid(row=1, column=0, padx=10, pady=(1, 0))
-        self.lbl_help_link.bind("<Button-1>", lambda e: self._open_telegram())
 
         # QR + client info side by side
         self.info_frame = ctk.CTkFrame(self.client_frame, fg_color="transparent")
@@ -507,13 +506,6 @@ class SoftSupportApp(ctk.CTk):
             self._qr_image = ctk.CTkImage(
                 light_image=qr_img, dark_image=qr_img, size=(140, 140))
             self.lbl_qr.configure(image=self._qr_image, text="")
-
-    # --- Open telegram link ---
-    def _open_telegram(self):
-        tg_link = self.config_data.get("telegram_link", "")
-        if tg_link:
-            import webbrowser
-            webbrowser.open(tg_link)
 
     # --- Open logs (password protected) ---
     def _open_logs_with_password(self):
