@@ -16,6 +16,7 @@ import urllib.error
 
 from src.version import __version__
 from src.utils.logging import log
+from src.utils.ssl_ctx import ssl_context
 
 UPDATE_API = "https://limansoft.com/api/v1/update"
 
@@ -35,7 +36,7 @@ def check_update():
     try:
         url = f"{UPDATE_API}?name=limansoft-support&platform={_get_platform()}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10, context=ssl_context) as resp:
             if resp.status == 200:
                 data = json.loads(resp.read().decode("utf-8"))
                 remote_version = data.get("version", "")
@@ -52,7 +53,7 @@ def check_update():
 def _download_file(url, dest):
     """Download file from url to dest path."""
     req = urllib.request.Request(url)
-    with urllib.request.urlopen(req, timeout=120) as resp:
+    with urllib.request.urlopen(req, timeout=120, context=ssl_context) as resp:
         with open(dest, "wb") as f:
             while True:
                 chunk = resp.read(8192)

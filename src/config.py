@@ -5,6 +5,8 @@ import sys
 import urllib.request
 import urllib.error
 
+from src.utils.ssl_ctx import ssl_context
+
 API_URL = "https://limansoft.com/api/v1/pos/"
 
 
@@ -64,7 +66,7 @@ def fetch_from_api(code):
     try:
         url = API_URL + code
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10, context=ssl_context) as resp:
             if resp.status == 200:
                 data = json.loads(resp.read().decode("utf-8"))
                 return {
