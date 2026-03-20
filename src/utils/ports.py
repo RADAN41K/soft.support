@@ -182,10 +182,19 @@ foreach ($d in $devs) {
   if ($pn -and $pn -gt 0) { "$($d.FriendlyName) [USB$pn]" }
 }
 """
-            out = subprocess.check_output(
+            raw = subprocess.check_output(
                 ["powershell", "-NoProfile", "-Command", ps_script],
-                text=True, timeout=15, **_SUBPROCESS_KWARGS
+                timeout=15, **_SUBPROCESS_KWARGS
             )
+            # PowerShell on Russian Windows outputs cp866
+            for enc in ("utf-8", "cp866", "cp1251"):
+                try:
+                    out = raw.decode(enc)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                out = raw.decode("utf-8", errors="replace")
             seen = set()
             for line in out.splitlines():
                 name = line.strip()
