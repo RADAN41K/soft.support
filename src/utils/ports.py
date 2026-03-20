@@ -145,63 +145,41 @@ def get_usb_devices():
                             devices.append(name.strip())
 
         elif system == "Windows":
-            # Port USB detection from PS script logic:
-            # 1. Find devices with USB\VID_ or USBSTOR\ InstanceId
-            # 2. Filter by allowed classes, exclude internal
-            # 3. Determine physical port number via LocationPaths
-            ps_script = r"""
-$allowed = @('HIDClass','Printer','Image','WPD','DiskDrive','CDROM','Ports','SmartCardReader','Media','Net')
-$exclude = 'Hub|Root|Controller|Composite|Bluetooth|Fingerprint|Internal|Integrated|IR |Biometric'
-$devs = Get-PnpDevice -Status OK -EA SilentlyContinue |
-  Where-Object {
-    ($_.InstanceId -match '^USB\\VID_' -or $_.InstanceId -match '^USBSTOR\\') -and
-    $_.Class -in $allowed -and
-    $_.FriendlyName -notmatch $exclude
-  }
-foreach ($d in $devs) {
-  # Check if device is physically present
-  $present = try { (Get-PnpDeviceProperty -InstanceId $d.InstanceId -KeyName 'DEVPKEY_Device_IsPresent' -EA SilentlyContinue).Data } catch { $true }
-  if (-not $present) { continue }
-  $id2 = $d.InstanceId
-  if ($id2 -match '^USBSTOR') {
-    $par = try { (Get-PnpDeviceProperty -InstanceId $id2 -KeyName 'DEVPKEY_Device_Parent' -EA SilentlyContinue).Data } catch { $null }
-    if ($par) { $id2 = $par }
-  }
-  $paths = try { (Get-PnpDeviceProperty -InstanceId $id2 -KeyName 'DEVPKEY_Device_LocationPaths' -EA SilentlyContinue).Data } catch { $null }
-  $pn = $null
-  if ($paths) {
-    $p = if ($paths -is [array]) { $paths[0] } else { [string]$paths }
-    $mm = [regex]::Matches($p,'USB\((\d+)\)')
-    if ($mm.Count -gt 0) { $pn = [int]$mm[$mm.Count-1].Groups[1].Value }
-  }
-  if (-not $pn) {
-    $loc = $d.LocationInformation
-    if ($loc -match 'Port_#(\d+)') { $pn = [int]$Matches[1] }
-    elseif ($loc -match '\.(\d+)$') { $pn = [int]$Matches[1] }
-  }
-  if ($pn -and $pn -gt 0) { "$($d.FriendlyName) [USB$pn]" }
-}
-"""
+            # Use wmic — faster and more stable than PowerShell
             raw = subprocess.check_output(
-                ["powershell", "-NoProfile", "-Command", ps_script],
-                timeout=15, **_SUBPROCESS_KWARGS
+                ["wmic", "path", "Win32_PnPEntity", "where",
+                 "PNPDeviceID like 'USB\\\\VID_%' AND Status='OK'",
+                 "get", "Name,PNPDeviceID,Status",
+                 "/format:csv"],
+                timeout=10, **_SUBPROCESS_KWARGS
             )
-            # PowerShell on Russian Windows outputs cp866
-            for enc in ("utf-8", "cp866", "cp1251"):
+            # wmic outputs UTF-16 or cp866 depending on locale
+            for enc in ("utf-16", "utf-8", "cp866", "cp1251"):
                 try:
                     out = raw.decode(enc)
                     break
-                except UnicodeDecodeError:
+                except (UnicodeDecodeError, UnicodeError):
                     continue
             else:
                 out = raw.decode("utf-8", errors="replace")
-            seen = set()
+
+            exclude = re.compile(
+                r"hub|root|controller|composite|bluetooth|fingerprint"
+                r"|internal|integrated|biometric", re.IGNORECASE)
             for line in out.splitlines():
-                name = line.strip()
-                if name and name not in seen:
-                    seen.add(name)
-                    devices.append(name)
-            devices.sort(key=lambda x: int(re.sub(r'\D', '', x) or 0))
+                line = line.strip()
+                if not line or line.startswith("Node"):
+                    continue
+                parts = line.split(",")
+                if len(parts) < 3:
+                    continue
+                name = parts[1].strip()
+                pnp_id = parts[2].strip()
+                if not name or not pnp_id:
+                    continue
+                if exclude.search(name):
+                    continue
+                devices.append(name)
 
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         pass
