@@ -471,12 +471,13 @@ class SoftSupportApp(ctk.CTk):
             self.vpn_bar.configure(fg_color=RED)
             self.lbl_vpn_status.configure(text="NetBird вiдключений")
 
+        self._fit_height()
+
     # --- Fit height ---
     def _fit_height(self):
         self.update_idletasks()
-        cur_w = self.winfo_width()
         req_h = self.winfo_reqheight()
-        self.geometry(f"{cur_w}x{req_h}")
+        self.geometry(f"410x{req_h}")
 
     # --- Copy IP to clipboard ---
     def _copy_ip(self, label):
