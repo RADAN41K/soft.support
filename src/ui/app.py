@@ -424,8 +424,8 @@ class SoftSupportApp(ctk.CTk):
 
     def _update_ui(self, serial_ports, usb_devices,
                    local_ip, netbird_ip, radmin_ip, vpn_on):
-        # Ports
-        scroll_pos = self.ports_text.yview()
+        # Ports — save visible line index before rewriting
+        first_visible = self.ports_text.index("@0,0")
         self.ports_text.configure(state="normal")
         self.ports_text.delete("1.0", "end")
 
@@ -455,7 +455,7 @@ class SoftSupportApp(ctk.CTk):
             self.ports_text.insert("end", "  USB: немає пристроїв\n")
 
         self.ports_text.configure(state="disabled")
-        self.ports_text.yview_moveto(scroll_pos[0])
+        self.ports_text.see(first_visible)
 
         # Update counts and headers
         self._port_count = com_shown + len(usb_devices)
