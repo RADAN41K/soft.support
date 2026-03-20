@@ -152,7 +152,7 @@ def get_usb_devices():
             ps_script = r"""
 $allowed = @('HIDClass','Printer','Image','WPD','DiskDrive','CDROM','Ports','SmartCardReader','Media','Net')
 $exclude = 'Hub|Root|Controller|Composite|Bluetooth|Fingerprint|Internal|Integrated|IR |Biometric'
-$devs = Get-PnpDevice -Status OK -EA SilentlyContinue |
+$devs = Get-PnpDevice -PresentOnly -Status OK -EA SilentlyContinue |
   Where-Object {
     ($_.InstanceId -match '^USB\\VID_' -or $_.InstanceId -match '^USBSTOR\\') -and
     $_.Class -in $allowed -and
