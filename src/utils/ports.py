@@ -145,43 +145,23 @@ def get_usb_devices():
                             devices.append(name.strip())
 
         elif system == "Windows":
-            # Use wmic — faster and more stable than PowerShell
-            raw = subprocess.check_output(
-                ["wmic", "path", "Win32_PnPEntity", "where",
-                 "PNPDeviceID like 'USB\\\\VID_%' AND Status='OK'",
-                 "get", "Name,PNPDeviceID,Status",
-                 "/format:csv"],
-                timeout=10, **_SUBPROCESS_KWARGS
-            )
-            # wmic outputs UTF-16 or cp866 depending on locale
-            for enc in ("utf-16", "utf-8", "cp866", "cp1251"):
-                try:
-                    out = raw.decode(enc)
-                    break
-                except (UnicodeDecodeError, UnicodeError):
-                    continue
-            else:
-                out = raw.decode("utf-8", errors="replace")
-
+            import wmi
+            c = wmi.WMI()
             exclude = re.compile(
                 r"hub|root|controller|composite|bluetooth|fingerprint"
                 r"|internal|integrated|biometric", re.IGNORECASE)
-            for line in out.splitlines():
-                line = line.strip()
-                if not line or line.startswith("Node"):
+            for dev in c.Win32_PnPEntity():
+                pnp_id = dev.PNPDeviceID or ""
+                if not pnp_id.startswith("USB\\VID_"):
                     continue
-                parts = line.split(",")
-                if len(parts) < 3:
+                if dev.Status != "OK":
                     continue
-                name = parts[1].strip()
-                pnp_id = parts[2].strip()
-                if not name or not pnp_id:
-                    continue
-                if exclude.search(name):
+                name = dev.Name or ""
+                if not name or exclude.search(name):
                     continue
                 devices.append(name)
 
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+    except Exception:
         pass
 
     return devices

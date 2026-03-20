@@ -4,6 +4,8 @@ Pillow>=10.0
 pyserial>=3.5
 psutil>=5.9
 pystray>=0.19
+wmi>=1.5; sys_platform == "win32"
+pywin32>=306; sys_platform == "win32"
 pip-system-certs>=4.0
 certifi>=2023.0
 truststore>=0.8
