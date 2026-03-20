@@ -440,7 +440,8 @@ class SoftSupportApp(ctk.CTk):
                 status_txt = "відключено"
             else:
                 continue
-            self.ports_text.insert("end", f"  {p['device']}  —  {status_txt}\n")
+            hwid = p.get("hwid", "")
+            self.ports_text.insert("end", f"  {p['device']}  —  {status_txt}  [{hwid}]\n")
             com_shown += 1
         if com_shown == 0:
             self.ports_text.insert("end", "  COM: немає пристроїв\n")
