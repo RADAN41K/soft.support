@@ -5,7 +5,7 @@ Only used for our own API (limansoft.com), not arbitrary URLs.
 """
 import ssl
 import urllib.request
-from src.utils.logger import log
+from src.utils.logging import log
 
 
 def _build_context():
