@@ -152,13 +152,16 @@ def get_usb_devices():
             ps_script = r"""
 $allowed = @('HIDClass','Printer','Image','WPD','DiskDrive','CDROM','Ports','SmartCardReader','Media','Net')
 $exclude = 'Hub|Root|Controller|Composite|Bluetooth|Fingerprint|Internal|Integrated|IR |Biometric'
-$devs = Get-PnpDevice -PresentOnly -Status OK -EA SilentlyContinue |
+$devs = Get-PnpDevice -Status OK -EA SilentlyContinue |
   Where-Object {
     ($_.InstanceId -match '^USB\\VID_' -or $_.InstanceId -match '^USBSTOR\\') -and
     $_.Class -in $allowed -and
     $_.FriendlyName -notmatch $exclude
   }
 foreach ($d in $devs) {
+  # Check if device is physically present
+  $present = try { (Get-PnpDeviceProperty -InstanceId $d.InstanceId -KeyName 'DEVPKEY_Device_IsPresent' -EA SilentlyContinue).Data } catch { $true }
+  if (-not $present) { continue }
   $id2 = $d.InstanceId
   if ($id2 -match '^USBSTOR') {
     $par = try { (Get-PnpDeviceProperty -InstanceId $id2 -KeyName 'DEVPKEY_Device_Parent' -EA SilentlyContinue).Data } catch { $null }
@@ -176,7 +179,7 @@ foreach ($d in $devs) {
     if ($loc -match 'Port_#(\d+)') { $pn = [int]$Matches[1] }
     elseif ($loc -match '\.(\d+)$') { $pn = [int]$Matches[1] }
   }
-  if ($pn -and $pn -gt 0) { "USB$pn" }
+  if ($pn -and $pn -gt 0) { "$($d.FriendlyName) [USB$pn]" }
 }
 """
             out = subprocess.check_output(
