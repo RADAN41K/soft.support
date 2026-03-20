@@ -46,7 +46,7 @@ class SoftSupportApp(ctk.CTk):
 
         self.title(f"LimanSoft Support — v{__version__}")
         self.minsize(370, 200)
-        self.geometry("410x200")
+        self.geometry("430x200")
         self._set_icon()
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
@@ -477,11 +477,12 @@ class SoftSupportApp(ctk.CTk):
     # --- Fit height ---
     def _fit_height(self):
         self.update_idletasks()
+        cur_w = self.winfo_width()
         req_h = self.winfo_reqheight()
-        # Bypass customtkinter scaling — winfo_reqheight already returns
+        # Bypass customtkinter scaling — winfo values already in
         # scaled pixels, calling self.geometry() would scale them again
         import tkinter
-        tkinter.Tk.geometry(self, f"410x{req_h}")
+        tkinter.Tk.geometry(self, f"{cur_w}x{req_h}")
 
     # --- Copy IP to clipboard ---
     def _copy_ip(self, label):
