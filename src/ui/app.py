@@ -429,11 +429,14 @@ class SoftSupportApp(ctk.CTk):
 
         if serial_ports:
             for p in serial_ports:
-                desc = p.get("description", "")
-                if desc and desc != p["device"]:
-                    self.ports_text.insert("end", f"  {p['device']}  —  {desc}\n")
+                status = p.get("status", "")
+                if status == "busy":
+                    status_txt = "пристрій підключено \u2713"
+                elif status == "ready":
+                    status_txt = "пристрій знайдено"
                 else:
-                    self.ports_text.insert("end", f"  {p['device']}\n")
+                    status_txt = "вільний"
+                self.ports_text.insert("end", f"  {p['device']}  —  {status_txt}\n")
         else:
             self.ports_text.insert("end", "  COM: немає пристроїв\n")
 
