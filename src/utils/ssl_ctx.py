@@ -8,6 +8,15 @@ import urllib.request
 
 
 def _build_context():
+    # 0. Try pip-system-certs (patches ssl globally to use OS certs)
+    try:
+        import pip_system_certs  # noqa: F401
+        ctx = ssl.create_default_context()
+        _test_connection(ctx)
+        return ctx
+    except Exception:
+        pass
+
     # 1. Try truststore (OS-level certs)
     try:
         import truststore
