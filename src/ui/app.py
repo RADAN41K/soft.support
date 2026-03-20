@@ -425,11 +425,8 @@ class SoftSupportApp(ctk.CTk):
 
     def _update_ui(self, serial_ports, usb_devices,
                    local_ip, netbird_ip, radmin_ip, vpn_on):
-        # Ports — save visible line index before rewriting
-        first_visible = self.ports_text.index("@0,0")
-        self.ports_text.configure(state="normal")
-        self.ports_text.delete("1.0", "end")
-
+        # Ports — build new text, only rewrite if changed
+        lines = []
         com_shown = 0
         for p in serial_ports:
             status = p.get("status", "")
@@ -444,19 +441,24 @@ class SoftSupportApp(ctk.CTk):
                 status_txt = "вільний (програма не використовує)"
             else:
                 continue
-            self.ports_text.insert("end", f"  {p['device']}  —  {status_txt}  [{hwid}]\n")
+            lines.append(f"  {p['device']}  —  {status_txt}  [{hwid}]")
             com_shown += 1
         if com_shown == 0:
-            self.ports_text.insert("end", "  COM: портів не знайдено\n")
+            lines.append("  COM: портів не знайдено")
 
         if usb_devices:
             for d in usb_devices:
-                self.ports_text.insert("end", f"  USB: {d}\n")
+                lines.append(f"  USB: {d}")
         else:
-            self.ports_text.insert("end", "  USB: немає пристроїв\n")
+            lines.append("  USB: немає пристроїв")
 
-        self.ports_text.configure(state="disabled")
-        self.ports_text.see(first_visible)
+        new_text = "\n".join(lines)
+        old_text = self.ports_text.get("1.0", "end-1c")
+        if new_text != old_text:
+            self.ports_text.configure(state="normal")
+            self.ports_text.delete("1.0", "end")
+            self.ports_text.insert("end", new_text)
+            self.ports_text.configure(state="disabled")
 
         # Update counts and headers
         self._port_count = com_shown + len(usb_devices)
@@ -478,8 +480,6 @@ class SoftSupportApp(ctk.CTk):
         else:
             self.vpn_bar.configure(fg_color=RED)
             self.lbl_vpn_status.configure(text="NetBird вiдключений")
-
-        self._fit_height()
 
     # --- Fit height ---
     def _fit_height(self):
