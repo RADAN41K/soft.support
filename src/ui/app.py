@@ -456,7 +456,7 @@ class SoftSupportApp(ctk.CTk):
         self.ports_text.yview_moveto(scroll_pos[0])
 
         # Update counts and headers
-        self._port_count = len(serial_ports) + len(usb_devices)
+        self._port_count = com_shown + len(usb_devices)
         self._net_count = sum(1 for ip in [local_ip, netbird_ip, radmin_ip]
                               if _is_active_ip(ip))
         self._update_section_header("ports", self._port_count)
