@@ -45,8 +45,8 @@ class SoftSupportApp(ctk.CTk):
         super().__init__()
 
         self.title(f"LimanSoft Support — v{__version__}")
-        self.minsize(340, 200)
-        self.geometry("380x200")
+        self.minsize(370, 200)
+        self.geometry("410x200")
         self._set_icon()
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
@@ -217,40 +217,45 @@ class SoftSupportApp(ctk.CTk):
         right = ctk.CTkFrame(self.info_frame, fg_color="transparent")
         right.grid(row=0, column=2)
 
-        self.lbl_client_id = ctk.CTkLabel(right, text="—",
-                                           font=ctk.CTkFont(size=16, weight="bold"),
-                                           text_color=WHITE)
-        self.lbl_client_id.grid(row=0, column=0, sticky="w")
+        self.lbl_pos_id = ctk.CTkLabel(right, text="—",
+                                        font=ctk.CTkFont(size=18, weight="bold"),
+                                        text_color=WHITE)
+        self.lbl_pos_id.grid(row=0, column=0, sticky="w")
+
+        self.lbl_shop_name = ctk.CTkLabel(right, text="—",
+                                            font=ctk.CTkFont(size=13),
+                                            text_color=WHITE)
+        self.lbl_shop_name.grid(row=1, column=0, sticky="w")
 
         ctk.CTkLabel(right, text="Номер тех.пiдтримки:",
                      font=ctk.CTkFont(size=10),
-                     text_color="#FFD5B0").grid(row=1, column=0, sticky="w")
+                     text_color="#FFD5B0").grid(row=2, column=0, sticky="w")
 
         self.lbl_phone = ctk.CTkLabel(right, text="—",
                                        font=ctk.CTkFont(size=15),
                                        text_color=WHITE)
-        self.lbl_phone.grid(row=2, column=0, sticky="w")
+        self.lbl_phone.grid(row=3, column=0, sticky="w")
 
         self.btn_edit = ctk.CTkButton(
             right, text="Редагувати", width=80, height=22,
             fg_color=DARK_ORANGE, hover_color="#CC5500",
             font=ctk.CTkFont(size=10),
             command=self._open_config_editor)
-        self.btn_edit.grid(row=3, column=0, sticky="w", pady=(4, 0))
+        self.btn_edit.grid(row=4, column=0, sticky="w", pady=(4, 0))
 
         self.btn_logs = ctk.CTkButton(
             right, text="Логи", width=80, height=22,
             fg_color=DARK_ORANGE, hover_color="#CC5500",
             font=ctk.CTkFont(size=10),
             command=self._open_logs_with_password)
-        self.btn_logs.grid(row=4, column=0, sticky="w", pady=(2, 0))
+        self.btn_logs.grid(row=5, column=0, sticky="w", pady=(2, 0))
 
         self.btn_hide = ctk.CTkButton(
             right, text="Вихiд", width=80, height=22,
             fg_color=DARK_ORANGE, hover_color="#CC5500",
             font=ctk.CTkFont(size=10),
             command=self._on_close)
-        self.btn_hide.grid(row=5, column=0, sticky="w", pady=(2, 0))
+        self.btn_hide.grid(row=6, column=0, sticky="w", pady=(2, 0))
 
         # Spacer right
         ctk.CTkFrame(self.info_frame, fg_color="transparent", width=1).grid(
@@ -480,13 +485,15 @@ class SoftSupportApp(ctk.CTk):
             config, is_new = load_or_fetch_config()
         except Exception as e:
             self.config_data = {}
-            self.lbl_client_id.configure(text=f"Помилка: {e}")
+            self.lbl_pos_id.configure(text=f"Помилка: {e}")
+            self.lbl_shop_name.configure(text="")
             log(f"Помилка завантаження конфігу: {e}", "ERROR")
             return
 
         if is_new or config is None:
             self.config_data = {}
-            self.lbl_client_id.configure(text="Введiть код")
+            self.lbl_pos_id.configure(text="Введiть код")
+            self.lbl_shop_name.configure(text="")
             self.lbl_phone.configure(text="—")
             self.after(500, self._prompt_code_input)
             return
@@ -498,18 +505,18 @@ class SoftSupportApp(ctk.CTk):
         """Update UI with current config data."""
         pos_id = self.config_data.get("pos_id", "")
         shop_name = self.config_data.get("shop_name", "—")
-        display_name = f"#{pos_id} {shop_name}" if pos_id else shop_name
-        self.lbl_client_id.configure(text=display_name)
+        self.lbl_pos_id.configure(text=f"#{pos_id}" if pos_id else "—")
+        self.lbl_shop_name.configure(text=shop_name)
         self.lbl_phone.configure(
             text=self.config_data.get("support_phone", "—"))
-        log(f"Клієнт: {display_name} | "
+        log(f"Клієнт: #{pos_id} {shop_name} | "
             f"Телефон: {self.config_data.get('support_phone')}")
 
         tg_link = self.config_data.get("telegram_link", "")
         if tg_link:
-            qr_img = generate_qr(tg_link, size=140)
+            qr_img = generate_qr(tg_link, size=190)
             self._qr_image = ctk.CTkImage(
-                light_image=qr_img, dark_image=qr_img, size=(140, 140))
+                light_image=qr_img, dark_image=qr_img, size=(190, 190))
             self.lbl_qr.configure(image=self._qr_image, text="")
 
     # --- Open logs (password protected) ---
