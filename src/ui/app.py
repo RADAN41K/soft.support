@@ -425,6 +425,7 @@ class SoftSupportApp(ctk.CTk):
     def _update_ui(self, serial_ports, usb_devices,
                    local_ip, netbird_ip, radmin_ip, vpn_on):
         # Ports
+        scroll_pos = self.ports_text.yview()
         self.ports_text.configure(state="normal")
         self.ports_text.delete("1.0", "end")
 
@@ -438,7 +439,7 @@ class SoftSupportApp(ctk.CTk):
                 elif status == "disconnected":
                     status_txt = "відключено"
                 else:
-                    status_txt = "вільний"
+                    continue
                 self.ports_text.insert("end", f"  {p['device']}  —  {status_txt}\n")
         else:
             self.ports_text.insert("end", "  COM: немає пристроїв\n")
@@ -450,6 +451,7 @@ class SoftSupportApp(ctk.CTk):
             self.ports_text.insert("end", "  USB: немає пристроїв\n")
 
         self.ports_text.configure(state="disabled")
+        self.ports_text.yview_moveto(scroll_pos[0])
 
         # Update counts and headers
         self._port_count = len(serial_ports) + len(usb_devices)
