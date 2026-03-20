@@ -71,7 +71,8 @@ class SoftSupportApp(ctk.CTk):
         self._setup_tray()
         self._start_auto_refresh()
         self.resizable(True, False)
-        self.after(100, self._fit_height)
+        self.after(300, self._fit_height)
+        self.after(1000, self._fit_height)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         log(f"Форму запущено v{__version__}, додаток готовий до роботи")
@@ -477,7 +478,10 @@ class SoftSupportApp(ctk.CTk):
     def _fit_height(self):
         self.update_idletasks()
         req_h = self.winfo_reqheight()
-        self.geometry(f"410x{req_h}")
+        # Bypass customtkinter scaling — winfo_reqheight already returns
+        # scaled pixels, calling self.geometry() would scale them again
+        import tkinter
+        tkinter.Tk.geometry(self, f"410x{req_h}")
 
     # --- Copy IP to clipboard ---
     def _copy_ip(self, label):
