@@ -432,7 +432,7 @@ class SoftSupportApp(ctk.CTk):
             for p in serial_ports:
                 status = p.get("status", "")
                 if status == "busy":
-                    status_txt = "пристрій підключено \u2713"
+                    status_txt = "зайнятий (програма)"
                 elif status == "ready":
                     status_txt = "пристрій знайдено"
                 elif status == "disconnected":
