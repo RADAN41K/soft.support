@@ -432,19 +432,21 @@ class SoftSupportApp(ctk.CTk):
         com_shown = 0
         for p in serial_ports:
             status = p.get("status", "")
+            hwid = p.get("hwid", "")
             if status == "busy":
                 status_txt = "зайнятий (програма)"
             elif status == "ready":
                 status_txt = "пристрій знайдено"
             elif status == "disconnected":
                 status_txt = "відключено"
+            elif status == "empty":
+                status_txt = "вільний (програма не використовує)"
             else:
                 continue
-            hwid = p.get("hwid", "")
             self.ports_text.insert("end", f"  {p['device']}  —  {status_txt}  [{hwid}]\n")
             com_shown += 1
         if com_shown == 0:
-            self.ports_text.insert("end", "  COM: немає пристроїв\n")
+            self.ports_text.insert("end", "  COM: портів не знайдено\n")
 
         if usb_devices:
             for d in usb_devices:
