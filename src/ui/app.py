@@ -45,21 +45,13 @@ class SoftSupportApp(ctk.CTk):
         super().__init__()
 
         self.title(f"LimanSoft Support — v{__version__}")
+        self.minsize(340, 200)
+        self.geometry("380x200")
         self._set_icon()
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
         self.configure(fg_color=WHITE)
         self.attributes("-topmost", True)
-
-        # Always open maximized / fullscreen
-        system = platform.system()
-        if system == "Windows":
-            self.state("zoomed")
-        elif system == "Darwin":
-            self.attributes("-fullscreen", False)
-            self.after(50, lambda: self.state("zoomed"))
-        else:
-            self.attributes("-zoomed", True)
 
         self.config_data = {}
         self._qr_image = None
@@ -78,7 +70,8 @@ class SoftSupportApp(ctk.CTk):
         self._load_data()
         self._setup_tray()
         self._start_auto_refresh()
-        self.resizable(True, True)
+        self.resizable(True, False)
+        self.after(100, self._fit_height)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         log(f"Форму запущено v{__version__}, додаток готовий до роботи")
@@ -365,6 +358,7 @@ class SoftSupportApp(ctk.CTk):
                                 pady=(5, 0), sticky="ew")
             sec["expanded"] = True
         self._update_section_header(name, count)
+        self._fit_height()
 
     def _update_section_header(self, name, count):
         sec = self._sections[name]
@@ -462,6 +456,13 @@ class SoftSupportApp(ctk.CTk):
         else:
             self.vpn_bar.configure(fg_color=RED)
             self.lbl_vpn_status.configure(text="NetBird вiдключений")
+
+    # --- Fit height ---
+    def _fit_height(self):
+        self.update_idletasks()
+        cur_w = self.winfo_width()
+        req_h = self.winfo_reqheight()
+        self.geometry(f"{cur_w}x{req_h}")
 
     # --- Copy IP to clipboard ---
     def _copy_ip(self, label):
@@ -615,6 +616,7 @@ class SoftSupportApp(ctk.CTk):
                 log(f"Код '{code}' прийнято, дані завантажено з API")
                 dialog.destroy()
                 self.attributes("-topmost", True)
+                self._fit_height()
             else:
                 lbl_error.configure(
                     text="Код не знайдено або помилка з'єднання")
