@@ -434,6 +434,8 @@ class SoftSupportApp(ctk.CTk):
                     status_txt = "пристрій підключено \u2713"
                 elif status == "ready":
                     status_txt = "пристрій знайдено"
+                elif status == "disconnected":
+                    status_txt = "відключено"
                 else:
                     status_txt = "вільний"
                 self.ports_text.insert("end", f"  {p['device']}  —  {status_txt}\n")

@@ -25,9 +25,13 @@ def _check_port_status(device):
             return "empty"
         finally:
             ser.close()
-    except serial.SerialException:
-        # Cannot open — another program is using it
-        return "busy"
+    except serial.SerialException as e:
+        err_msg = str(e).lower()
+        # "Access is denied" / "PermissionError" = another program holds the port
+        if "access" in err_msg or "permission" in err_msg or "in use" in err_msg:
+            return "busy"
+        # Other errors (device removed, port doesn't exist)
+        return "disconnected"
 
 
 _prev_com_status = {}
@@ -49,10 +53,6 @@ def get_serial_ports():
         if prev != status:
             log(f"COM {port.device}: {status} | {port.description} | {port.hwid}")
             _prev_com_status[port.device] = status
-
-        # Skip empty ACPI ports (built-in motherboard ports with nothing connected)
-        if status == "empty" and "ACPI" in (port.hwid or ""):
-            continue
 
         ports.append({
             "device": port.device,
