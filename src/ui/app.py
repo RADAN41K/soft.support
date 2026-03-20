@@ -75,7 +75,8 @@ class SoftSupportApp(ctk.CTk):
         self.after(1000, self._fit_height)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
-        log(f"Форму запущено v{__version__}, додаток готовий до роботи")
+        self.withdraw()
+        log(f"Форму запущено v{__version__}, додаток готовий до роботи (згорнуто в трей)")
 
         # Check for updates silently in background
         check_and_apply_silently()
