@@ -438,7 +438,7 @@ class SoftSupportApp(ctk.CTk):
             elif status == "disconnected":
                 status_txt = "відключено"
             elif status == "empty":
-                status_txt = "вільний (програма не використовує)"
+                status_txt = "вільний (без програми)"
             else:
                 continue
             lines.append(f"  {p['device']}  —  {status_txt}  [{hwid}]")
