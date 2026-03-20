@@ -429,7 +429,11 @@ class SoftSupportApp(ctk.CTk):
 
         if serial_ports:
             for p in serial_ports:
-                self.ports_text.insert("end", f"  {p['device']}\n")
+                desc = p.get("description", "")
+                if desc and desc != p["device"]:
+                    self.ports_text.insert("end", f"  {p['device']}  —  {desc}\n")
+                else:
+                    self.ports_text.insert("end", f"  {p['device']}\n")
         else:
             self.ports_text.insert("end", "  COM: немає пристроїв\n")
 

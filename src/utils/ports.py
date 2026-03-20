@@ -4,6 +4,7 @@ import subprocess
 
 import serial.tools.list_ports
 
+from src.utils.logging import log
 from src.utils.platform_utils import SUBPROCESS_KWARGS as _SUBPROCESS_KWARGS
 
 
@@ -11,8 +12,10 @@ def get_serial_ports():
     """Get list of physical COM/serial ports (filter out internal)."""
     ports = []
     for port in serial.tools.list_ports.comports():
+        log(f"COM знайдено: {port.device} | {port.description} | {port.hwid}")
         lower = f"{port.device} {port.description}".lower()
         if any(kw in lower for kw in INTERNAL_SERIAL_KEYWORDS):
+            log(f"COM пропущено (internal): {port.device}")
             continue
         ports.append({
             "device": port.device,
