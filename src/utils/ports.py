@@ -30,22 +30,28 @@ def _check_port_status(device):
         return "busy"
 
 
+_prev_com_status = {}
+
+
 def get_serial_ports():
     """Get list of physical COM/serial ports with connection status."""
+    global _prev_com_status
     ports = []
     for port in serial.tools.list_ports.comports():
-        log(f"COM знайдено: {port.device} | {port.description} | {port.hwid}")
         lower = f"{port.device} {port.description}".lower()
         if any(kw in lower for kw in INTERNAL_SERIAL_KEYWORDS):
-            log(f"COM пропущено (internal): {port.device}")
             continue
 
         status = _check_port_status(port.device)
-        log(f"COM статус: {port.device} — {status}")
+
+        # Log only on first scan or status change
+        prev = _prev_com_status.get(port.device)
+        if prev != status:
+            log(f"COM {port.device}: {status} | {port.description} | {port.hwid}")
+            _prev_com_status[port.device] = status
 
         # Skip empty ACPI ports (built-in motherboard ports with nothing connected)
         if status == "empty" and "ACPI" in (port.hwid or ""):
-            log(f"COM пропущено (ACPI empty): {port.device}")
             continue
 
         ports.append({
