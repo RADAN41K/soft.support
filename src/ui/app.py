@@ -273,6 +273,17 @@ class SoftSupportApp(ctk.CTk):
             self._sections["ports"]["content"], height=100)
         self.ports_text.grid(row=0, column=0, padx=10, pady=(5, 8), sticky="ew")
 
+        # Right-click context menu for ports textbox
+        self._ports_menu = tkinter.Menu(self, tearoff=0)
+        self._ports_menu.add_command(label="Копiювати", command=self._copy_ports_selection)
+        self._ports_menu.add_command(label="Копiювати все", command=self._copy_ports_all)
+
+        def _show_ports_menu(event):
+            self._ports_menu.tk_popup(event.x_root, event.y_root)
+
+        self.ports_text._textbox.bind("<Button-3>", _show_ports_menu)
+        self.ports_text._textbox.bind("<Button-2>", _show_ports_menu)
+
         # --- Block 3: Network (collapsible) ---
         row = self._build_collapsible_section(
             "net", "Мережа", row)
@@ -492,6 +503,22 @@ class SoftSupportApp(ctk.CTk):
         tkinter.Tk.geometry(self, f"{cur_w}x{req_h}")
 
     # --- Copy IP to clipboard ---
+    def _copy_ports_selection(self):
+        """Copy selected text from ports textbox."""
+        try:
+            text = self.ports_text.selection_get()
+            self.clipboard_clear()
+            self.clipboard_append(text)
+        except Exception:
+            pass
+
+    def _copy_ports_all(self):
+        """Copy all text from ports textbox."""
+        text = self.ports_text.get("1.0", "end-1c")
+        if text.strip():
+            self.clipboard_clear()
+            self.clipboard_append(text)
+
     def _copy_ip(self, label):
         ip = label.cget("text")
         if ip and ip != "..." and _is_active_ip(ip):
