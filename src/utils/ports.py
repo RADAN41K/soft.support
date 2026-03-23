@@ -171,34 +171,37 @@ def get_usb_devices():
                     if dep_id:
                         connected_ids.add(dep_id.upper())
                 for dev in c.Win32_PnPEntity():
-                    pnp_id = dev.PNPDeviceID or ""
-                    if not pnp_id.startswith("USB\\VID_"):
+                    try:
+                        pnp_id = dev.PNPDeviceID or ""
+                        if not pnp_id.startswith("USB\\VID_"):
+                            continue
+                        if pnp_id.upper() not in connected_ids:
+                            continue
+                        name = dev.Name or ""
+                        if not name:
+                            continue
+                        if exclude.search(name):
+                            continue
+                        service = getattr(dev, 'Service', '') or ""
+                        if service.lower() in exclude_services:
+                            continue
+                        # Get physical port number
+                        loc = getattr(dev, 'LocationInformation', '') or ""
+                        port_num = ""
+                        m = re.search(r'Port_#(\d+)', loc)
+                        if m:
+                            port_num = str(int(m.group(1)))
+                        # Extract VID:PID from PNPDeviceID
+                        vid_pid = ""
+                        vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
+                        if vp:
+                            vid_pid = f"{vp.group(1)}:{vp.group(2)}"
+                        label = f"USB{port_num}: {name}" if port_num else name
+                        if vid_pid:
+                            label += f" [{vid_pid}]"
+                        devices.append(label)
+                    except Exception:
                         continue
-                    if pnp_id.upper() not in connected_ids:
-                        continue
-                    name = dev.Name or ""
-                    if not name:
-                        continue
-                    if exclude.search(name):
-                        continue
-                    service = (dev.Service or "").lower()
-                    if service in exclude_services:
-                        continue
-                    # Get physical port number from LocationInformation
-                    loc = dev.LocationInformation or ""
-                    port_num = ""
-                    m = re.search(r'Port_#(\d+)', loc)
-                    if m:
-                        port_num = str(int(m.group(1)))
-                    # Extract VID:PID from PNPDeviceID
-                    vid_pid = ""
-                    vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
-                    if vp:
-                        vid_pid = f"{vp.group(1)}:{vp.group(2)}"
-                    label = f"USB{port_num}: {name}" if port_num else name
-                    if vid_pid:
-                        label += f" [{vid_pid}]"
-                    devices.append(label)
             finally:
                 pythoncom.CoUninitialize()
 
