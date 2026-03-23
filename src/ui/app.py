@@ -458,8 +458,8 @@ class SoftSupportApp(ctk.CTk):
             lines.append("  COM: портів не знайдено")
 
         if usb_devices:
-            for i, d in enumerate(usb_devices, 1):
-                lines.append(f"  USB{i}: {d}")
+            for d in usb_devices:
+                lines.append(f"  {d}")
         else:
             lines.append("  USB: немає пристроїв")
 

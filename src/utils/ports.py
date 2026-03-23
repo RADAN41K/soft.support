@@ -152,9 +152,10 @@ def get_usb_devices():
                 c = wmi.WMI()
                 exclude = re.compile(
                     r"root hub|host controller|generic hub|usb hub"
-                    r"|composite.+устройство|composite device"
                     r"|fingerprint|internal|integrated|biometric",
                     re.IGNORECASE)
+                # Services that represent virtual/wrapper USB devices
+                exclude_services = {"usbccgp"}
                 # Get physically connected USB device IDs
                 connected_ids = set()
                 for assoc in c.Win32_USBControllerDevice():
@@ -180,7 +181,24 @@ def get_usb_devices():
                         continue
                     if exclude.search(name):
                         continue
-                    devices.append(name)
+                    service = (dev.Service or "").lower()
+                    if service in exclude_services:
+                        continue
+                    # Get physical port number from LocationInformation
+                    loc = dev.LocationInformation or ""
+                    port_num = ""
+                    m = re.search(r'Port_#(\d+)', loc)
+                    if m:
+                        port_num = str(int(m.group(1)))
+                    # Extract VID:PID from PNPDeviceID
+                    vid_pid = ""
+                    vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
+                    if vp:
+                        vid_pid = f"{vp.group(1)}:{vp.group(2)}"
+                    label = f"USB{port_num}: {name}" if port_num else name
+                    if vid_pid:
+                        label += f" [{vid_pid}]"
+                    devices.append(label)
             finally:
                 pythoncom.CoUninitialize()
 
