@@ -185,8 +185,6 @@ def get_usb_devices():
                             loc = dev.LocationInformation or ""
                         except Exception:
                             loc = ""
-                        if vid_pid and vid_pid not in vidpid_port:
-                            log(f"USB dev: {vid_pid} | pnp={pnp_id} | loc={loc}")
                         m = re.search(r'Port_#(\d+)', loc)
                         if m and vid_pid and vid_pid not in vidpid_port:
                             vidpid_port[vid_pid] = str(int(m.group(1)))
