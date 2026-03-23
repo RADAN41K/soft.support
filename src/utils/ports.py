@@ -150,11 +150,18 @@ def get_usb_devices():
             exclude = re.compile(
                 r"hub|root|controller|composite|fingerprint"
                 r"|internal|integrated|biometric", re.IGNORECASE)
+            # Get only physically connected USB device IDs
+            connected_ids = set()
+            for assoc in c.Win32_USBControllerDevice():
+                dep = assoc.Dependent
+                dev_id = dep.split('"')[1].replace("\\\\", "\\") if '"' in dep else ""
+                if dev_id:
+                    connected_ids.add(dev_id.upper())
             for dev in c.Win32_PnPEntity():
                 pnp_id = dev.PNPDeviceID or ""
                 if not pnp_id.startswith("USB\\VID_"):
                     continue
-                if dev.Status != "OK":
+                if pnp_id.upper() not in connected_ids:
                     continue
                 name = dev.Name or ""
                 if not name or exclude.search(name):
