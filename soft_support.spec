@@ -32,6 +32,7 @@ a = Analysis(
         "truststore",
         "certifi",
         "wmi",
+        "pythoncom",
         "win32com",
         "win32com.client",
     ],

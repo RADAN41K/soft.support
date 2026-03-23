@@ -145,47 +145,44 @@ def get_usb_devices():
                             devices.append(name.strip())
 
         elif system == "Windows":
+            import pythoncom
             import wmi
-            c = wmi.WMI()
-            exclude = re.compile(
-                r"root hub|host controller|generic hub|usb hub"
-                r"|composite|fingerprint|internal|integrated|biometric",
-                re.IGNORECASE)
-            # Get only physically connected USB device IDs
-            connected_ids = set()
-            for assoc in c.Win32_USBControllerDevice():
-                dep = str(assoc.Dependent)
-                # Format: \\COMPUTER\...:Win32_PnPEntity.DeviceID="USB\\VID_..."
-                if 'DeviceID="' in dep:
-                    dev_id = dep.split('DeviceID="')[1].rstrip('"')
-                    dev_id = dev_id.replace("\\\\", "\\")
-                    connected_ids.add(dev_id.upper())
-                elif '"' in dep:
-                    dev_id = dep.split('"')[1].replace("\\\\", "\\")
-                    connected_ids.add(dev_id.upper())
-            log(f"USB connected IDs: {len(connected_ids)} devices")
-            # Log first 5 connected IDs for debugging
-            for i, cid in enumerate(connected_ids):
-                if i < 5:
-                    log(f"USB connected ID: {cid}")
-            # Log all USB\VID_ devices from PnPEntity
-            for dev in c.Win32_PnPEntity():
-                pnp_id_raw = dev.PNPDeviceID or ""
-                if pnp_id_raw.startswith("USB\\VID_"):
-                    log(f"USB PnPEntity: {dev.Name} | {pnp_id_raw} | in_connected={pnp_id_raw.upper() in connected_ids}")
-            for dev in c.Win32_PnPEntity():
-                pnp_id = dev.PNPDeviceID or ""
-                if not pnp_id.startswith("USB\\VID_"):
-                    continue
-                if pnp_id.upper() not in connected_ids:
-                    continue
-                name = dev.Name or ""
-                if not name:
-                    continue
-                if exclude.search(name):
-                    log(f"USB пропущено (фільтр): {name} | {pnp_id}")
-                    continue
-                devices.append(name)
+            pythoncom.CoInitialize()
+            try:
+                c = wmi.WMI()
+                exclude = re.compile(
+                    r"root hub|host controller|generic hub|usb hub"
+                    r"|composite|fingerprint|internal|integrated|biometric",
+                    re.IGNORECASE)
+                # Get physically connected USB device IDs
+                connected_ids = set()
+                for assoc in c.Win32_USBControllerDevice():
+                    dep = assoc.Dependent
+                    # dep is a WMI object reference — get its DeviceID
+                    dep_id = dep.DeviceID if hasattr(dep, 'DeviceID') else ""
+                    if not dep_id:
+                        # Fallback: parse string representation
+                        dep_str = str(dep)
+                        if 'DeviceID="' in dep_str:
+                            dep_id = dep_str.split('DeviceID="')[1].rstrip('"')
+                            dep_id = dep_id.replace("\\\\", "\\")
+                    if dep_id:
+                        connected_ids.add(dep_id.upper())
+                log(f"USB connected IDs: {len(connected_ids)} devices")
+                for dev in c.Win32_PnPEntity():
+                    pnp_id = dev.PNPDeviceID or ""
+                    if not pnp_id.startswith("USB\\VID_"):
+                        continue
+                    if pnp_id.upper() not in connected_ids:
+                        continue
+                    name = dev.Name or ""
+                    if not name:
+                        continue
+                    if exclude.search(name):
+                        continue
+                    devices.append(name)
+            finally:
+                pythoncom.CoUninitialize()
 
     except Exception as e:
         log(f"USB помилка: {e}", "WARN")
