@@ -452,7 +452,7 @@ class SoftSupportApp(ctk.CTk):
                 status_txt = "вільний (без програми)"
             else:
                 continue
-            lines.append(f"  {p['device']}  —  {status_txt}  [{hwid}]")
+            lines.append(f"  {p['device']}: {status_txt}  [{hwid}]")
             com_shown += 1
         if com_shown == 0:
             lines.append("  COM: портів не знайдено")
