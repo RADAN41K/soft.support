@@ -164,6 +164,15 @@ def get_usb_devices():
                     dev_id = dep.split('"')[1].replace("\\\\", "\\")
                     connected_ids.add(dev_id.upper())
             log(f"USB connected IDs: {len(connected_ids)} devices")
+            # Log first 5 connected IDs for debugging
+            for i, cid in enumerate(connected_ids):
+                if i < 5:
+                    log(f"USB connected ID: {cid}")
+            # Log all USB\VID_ devices from PnPEntity
+            for dev in c.Win32_PnPEntity():
+                pnp_id_raw = dev.PNPDeviceID or ""
+                if pnp_id_raw.startswith("USB\\VID_"):
+                    log(f"USB PnPEntity: {dev.Name} | {pnp_id_raw} | in_connected={pnp_id_raw.upper() in connected_ids}")
             for dev in c.Win32_PnPEntity():
                 pnp_id = dev.PNPDeviceID or ""
                 if not pnp_id.startswith("USB\\VID_"):
@@ -178,7 +187,7 @@ def get_usb_devices():
                     continue
                 devices.append(name)
 
-    except Exception:
-        pass
+    except Exception as e:
+        log(f"USB помилка: {e}", "WARN")
 
     return devices
