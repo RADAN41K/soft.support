@@ -154,7 +154,7 @@ def get_usb_devices():
                     r"root hub|host controller|generic hub|usb hub"
                     r"|fingerprint|internal|integrated|biometric",
                     re.IGNORECASE)
-                # Services that represent virtual/wrapper USB devices
+                # usbccgp = composite device wrapper (language-independent)
                 exclude_services = {"usbccgp"}
                 # Get physically connected USB device IDs
                 connected_ids = set()
@@ -175,9 +175,6 @@ def get_usb_devices():
                     try:
                         pnp_id = dev.PNPDeviceID or ""
                         if not pnp_id.startswith("USB\\VID_"):
-                            continue
-                        # Skip MI_ child interfaces — they duplicate parent
-                        if "\\MI_" in pnp_id.upper() or "&MI_" in pnp_id.upper():
                             continue
                         if pnp_id.upper() not in connected_ids:
                             continue
