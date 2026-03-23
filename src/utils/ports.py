@@ -153,10 +153,16 @@ def get_usb_devices():
             # Get only physically connected USB device IDs
             connected_ids = set()
             for assoc in c.Win32_USBControllerDevice():
-                dep = assoc.Dependent
-                dev_id = dep.split('"')[1].replace("\\\\", "\\") if '"' in dep else ""
-                if dev_id:
+                dep = str(assoc.Dependent)
+                # Format: \\COMPUTER\...:Win32_PnPEntity.DeviceID="USB\\VID_..."
+                if 'DeviceID="' in dep:
+                    dev_id = dep.split('DeviceID="')[1].rstrip('"')
+                    dev_id = dev_id.replace("\\\\", "\\")
                     connected_ids.add(dev_id.upper())
+                elif '"' in dep:
+                    dev_id = dep.split('"')[1].replace("\\\\", "\\")
+                    connected_ids.add(dev_id.upper())
+            log(f"USB connected IDs: {len(connected_ids)} devices")
             for dev in c.Win32_PnPEntity():
                 pnp_id = dev.PNPDeviceID or ""
                 if not pnp_id.startswith("USB\\VID_"):
