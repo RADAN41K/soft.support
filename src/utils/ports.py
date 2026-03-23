@@ -170,10 +170,14 @@ def get_usb_devices():
                             dep_id = dep_id.replace("\\\\", "\\")
                     if dep_id:
                         connected_ids.add(dep_id.upper())
+                seen_vidpid = set()
                 for dev in c.Win32_PnPEntity():
                     try:
                         pnp_id = dev.PNPDeviceID or ""
                         if not pnp_id.startswith("USB\\VID_"):
+                            continue
+                        # Skip MI_ child interfaces — they duplicate parent
+                        if "\\MI_" in pnp_id.upper() or "&MI_" in pnp_id.upper():
                             continue
                         if pnp_id.upper() not in connected_ids:
                             continue
@@ -185,22 +189,20 @@ def get_usb_devices():
                         service = getattr(dev, 'Service', '') or ""
                         if service.lower() in exclude_services:
                             continue
+                        # Extract VID:PID — skip duplicates
+                        vid_pid = ""
+                        vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
+                        if vp:
+                            vid_pid = f"{vp.group(1)}:{vp.group(2)}"
+                            if vid_pid in seen_vidpid:
+                                continue
+                            seen_vidpid.add(vid_pid)
                         # Get physical port number
                         loc = getattr(dev, 'LocationInformation', '') or ""
                         port_num = ""
                         m = re.search(r'Port_#(\d+)', loc)
                         if m:
                             port_num = str(int(m.group(1)))
-                        # Fallback: last number in PNPDeviceID instance
-                        if not port_num:
-                            m2 = re.search(r'&(\d+)$', pnp_id)
-                            if m2:
-                                port_num = m2.group(1)
-                        # Extract VID:PID from PNPDeviceID
-                        vid_pid = ""
-                        vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
-                        if vp:
-                            vid_pid = f"{vp.group(1)}:{vp.group(2)}"
                         label = f"USB{port_num}: {name}" if port_num else f"USB: {name}"
                         if vid_pid:
                             label += f" [{vid_pid}]"
