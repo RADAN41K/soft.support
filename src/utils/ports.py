@@ -185,16 +185,17 @@ def get_usb_devices():
                             loc = dev.LocationInformation or ""
                         except Exception:
                             loc = ""
-                        if vid_pid and loc:
-                            log(f"USB loc: {vid_pid} | {loc}")
+                        if vid_pid and vid_pid not in vidpid_port:
+                            log(f"USB dev: {vid_pid} | pnp={pnp_id} | loc={loc}")
                         m = re.search(r'Port_#(\d+)', loc)
                         if m and vid_pid and vid_pid not in vidpid_port:
                             vidpid_port[vid_pid] = str(int(m.group(1)))
-                        # Fallback: last number in instance ID (e.g. ...&0&7 → 7)
+                        # Fallback: port from ...&0&N format (skip MI_ interfaces)
                         if vid_pid and vid_pid not in vidpid_port:
-                            m2 = re.search(r'&(\d+)$', pnp_id)
-                            if m2 and int(m2.group(1)) > 0:
-                                vidpid_port[vid_pid] = m2.group(1)
+                            if "&MI_" not in pnp_id.upper():
+                                m2 = re.search(r'&0&(\d+)$', pnp_id)
+                                if m2:
+                                    vidpid_port[vid_pid] = m2.group(1)
                         all_usb_devs.append(dev)
                     except Exception:
                         continue
