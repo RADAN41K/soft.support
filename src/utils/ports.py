@@ -170,12 +170,29 @@ def get_usb_devices():
                             dep_id = dep_id.replace("\\\\", "\\")
                     if dep_id:
                         connected_ids.add(dep_id.upper())
-                seen_vidpid = set()
+                # First pass: collect port numbers for all USB VID devices
+                vidpid_port = {}
+                all_usb_devs = []
                 for dev in c.Win32_PnPEntity():
                     try:
                         pnp_id = dev.PNPDeviceID or ""
                         if not pnp_id.startswith("USB\\VID_"):
                             continue
+                        vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
+                        vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
+                        # Parent devices have LocationInformation with port
+                        loc = getattr(dev, 'LocationInformation', '') or ""
+                        m = re.search(r'Port_#(\d+)', loc)
+                        if m and vid_pid and vid_pid not in vidpid_port:
+                            vidpid_port[vid_pid] = str(int(m.group(1)))
+                        all_usb_devs.append(dev)
+                    except Exception:
+                        continue
+                # Second pass: build device list
+                seen_vidpid = set()
+                for dev in all_usb_devs:
+                    try:
+                        pnp_id = dev.PNPDeviceID or ""
                         if pnp_id.upper() not in connected_ids:
                             continue
                         name = dev.Name or ""
@@ -187,19 +204,14 @@ def get_usb_devices():
                         if service.lower() in exclude_services:
                             continue
                         # Extract VID:PID — skip duplicates
-                        vid_pid = ""
                         vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
-                        if vp:
-                            vid_pid = f"{vp.group(1)}:{vp.group(2)}"
+                        vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
+                        if vid_pid:
                             if vid_pid in seen_vidpid:
                                 continue
                             seen_vidpid.add(vid_pid)
-                        # Get physical port number
-                        loc = getattr(dev, 'LocationInformation', '') or ""
-                        port_num = ""
-                        m = re.search(r'Port_#(\d+)', loc)
-                        if m:
-                            port_num = str(int(m.group(1)))
+                        # Get port number from pre-built map
+                        port_num = vidpid_port.get(vid_pid, "")
                         label = f"USB{port_num}: {name}" if port_num else f"USB: {name}"
                         if vid_pid:
                             label += f" [{vid_pid}]"
