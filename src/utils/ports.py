@@ -191,12 +191,17 @@ def get_usb_devices():
                         m = re.search(r'Port_#(\d+)', loc)
                         if m:
                             port_num = str(int(m.group(1)))
+                        # Fallback: last number in PNPDeviceID instance
+                        if not port_num:
+                            m2 = re.search(r'&(\d+)$', pnp_id)
+                            if m2:
+                                port_num = m2.group(1)
                         # Extract VID:PID from PNPDeviceID
                         vid_pid = ""
                         vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         if vp:
                             vid_pid = f"{vp.group(1)}:{vp.group(2)}"
-                        label = f"USB{port_num}: {name}" if port_num else name
+                        label = f"USB{port_num}: {name}" if port_num else f"USB: {name}"
                         if vid_pid:
                             label += f" [{vid_pid}]"
                         devices.append(label)
