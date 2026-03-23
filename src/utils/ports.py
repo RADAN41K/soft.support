@@ -148,8 +148,9 @@ def get_usb_devices():
             import wmi
             c = wmi.WMI()
             exclude = re.compile(
-                r"hub|root|controller|composite|fingerprint"
-                r"|internal|integrated|biometric", re.IGNORECASE)
+                r"root hub|host controller|generic hub|usb hub"
+                r"|composite|fingerprint|internal|integrated|biometric",
+                re.IGNORECASE)
             # Get only physically connected USB device IDs
             connected_ids = set()
             for assoc in c.Win32_USBControllerDevice():
@@ -170,7 +171,10 @@ def get_usb_devices():
                 if pnp_id.upper() not in connected_ids:
                     continue
                 name = dev.Name or ""
-                if not name or exclude.search(name):
+                if not name:
+                    continue
+                if exclude.search(name):
+                    log(f"USB пропущено (фільтр): {name} | {pnp_id}")
                     continue
                 devices.append(name)
 
