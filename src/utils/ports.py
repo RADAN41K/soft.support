@@ -148,7 +148,7 @@ def get_usb_devices():
             import wmi
             c = wmi.WMI()
             exclude = re.compile(
-                r"hub|root|controller|composite|bluetooth|fingerprint"
+                r"hub|root|controller|composite|fingerprint"
                 r"|internal|integrated|biometric", re.IGNORECASE)
             for dev in c.Win32_PnPEntity():
                 pnp_id = dev.PNPDeviceID or ""
