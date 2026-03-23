@@ -180,11 +180,16 @@ def get_usb_devices():
                             continue
                         vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
-                        # Parent devices have LocationInformation with port
+                        # Get port number: LocationInformation or PNPDeviceID
                         loc = getattr(dev, 'LocationInformation', '') or ""
                         m = re.search(r'Port_#(\d+)', loc)
                         if m and vid_pid and vid_pid not in vidpid_port:
                             vidpid_port[vid_pid] = str(int(m.group(1)))
+                        # Fallback: last segment of instance ID (e.g. ...&0&7 → 7)
+                        if vid_pid and vid_pid not in vidpid_port:
+                            m2 = re.search(r'&0&(\d+)$', pnp_id)
+                            if m2:
+                                vidpid_port[vid_pid] = m2.group(1)
                         all_usb_devs.append(dev)
                     except Exception:
                         continue
