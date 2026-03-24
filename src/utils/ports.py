@@ -9,6 +9,62 @@ from src.utils.logging import log
 from src.utils.platform_utils import SUBPROCESS_KWARGS as _SUBPROCESS_KWARGS
 
 
+def _get_device_address(instance_id):
+    """Get USB device address (port number) via cfgmgr32 API.
+
+    Returns port number as string, or empty string on failure.
+    Windows only.
+    """
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        cfgmgr = ctypes.windll.CfgMgr32
+
+        class DEVPROPKEY(ctypes.Structure):
+            _fields_ = [("fmtid", ctypes.c_byte * 16), ("pid", wintypes.ULONG)]
+
+        key = DEVPROPKEY()
+        # GUID {a45c254e-df1c-4efd-8020-67d146a850e0}
+        guid_bytes = (
+            b'\x4e\x25\x5c\xa4\x1c\xdf\xfd\x4e'
+            b'\x80\x20\x67\xd1\x46\xa8\x50\xe0')
+        ctypes.memmove(key.fmtid, guid_bytes, 16)
+        key.pid = 30  # DEVPKEY_Device_Address
+
+        # Locate device node
+        dev_inst = wintypes.DWORD()
+        ret = cfgmgr.CM_Locate_DevNodeW(
+            ctypes.byref(dev_inst), instance_id, 0)
+        if ret != 0:
+            return ""
+
+        # Get property
+        prop_type = wintypes.ULONG()
+        buf_size = wintypes.ULONG(0)
+        # First call to get required buffer size
+        cfgmgr.CM_Get_DevNode_PropertyW(
+            dev_inst, ctypes.byref(key),
+            ctypes.byref(prop_type), None,
+            ctypes.byref(buf_size), 0)
+        if buf_size.value == 0:
+            return ""
+        buf = (ctypes.c_byte * buf_size.value)()
+        ret = cfgmgr.CM_Get_DevNode_PropertyW(
+            dev_inst, ctypes.byref(key),
+            ctypes.byref(prop_type), buf,
+            ctypes.byref(buf_size), 0)
+        if ret != 0:
+            return ""
+        # DEVPROP_TYPE_UINT32 = 7
+        if prop_type.value == 7 and buf_size.value >= 4:
+            addr = ctypes.c_uint32.from_buffer(buf).value
+            return str(addr)
+        return ""
+    except Exception:
+        return ""
+
+
 def _check_port_status(device):
     """Check COM port status: 'busy', 'ready', or 'empty'.
 
@@ -178,7 +234,7 @@ def get_usb_devices():
                             continue
                         vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
-                        # Get port number: LocationInformation > Address > &0&N
+                        # Get port number: LocationInfo > cfgmgr32 > &0&N
                         port = ""
                         try:
                             loc = dev.LocationInformation or ""
@@ -187,19 +243,9 @@ def get_usb_devices():
                         m = re.search(r'Port_#(\d+)', loc)
                         if m:
                             port = str(int(m.group(1)))
-                        # Fallback: DEVPKEY_Device_Address
+                        # Fallback: cfgmgr32 DEVPKEY_Device_Address
                         if not port:
-                            try:
-                                props = dev.GetDeviceProperties_(
-                                    ["DEVPKEY_Device_Address"])
-                                for p in props:
-                                    log(f"USB addr: {vid_pid} "
-                                        f"key={p.KeyName} data={p.Data} "
-                                        f"type={p.Type}")
-                                    if p.Data is not None:
-                                        port = str(int(p.Data))
-                            except Exception as e:
-                                log(f"USB addr err: {vid_pid} {e}", "WARN")
+                            port = _get_device_address(pnp_id)
                         # Fallback: &0&N from PNPDeviceID
                         if not port and "&MI_" not in pnp_id.upper():
                             m2 = re.search(r'&0&(\d+)$', pnp_id)
