@@ -193,10 +193,13 @@ def get_usb_devices():
                                 props = dev.GetDeviceProperties_(
                                     ["DEVPKEY_Device_Address"])
                                 for p in props:
+                                    log(f"USB addr: {vid_pid} "
+                                        f"key={p.KeyName} data={p.Data} "
+                                        f"type={p.Type}")
                                     if p.Data is not None:
                                         port = str(int(p.Data))
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                log(f"USB addr err: {vid_pid} {e}", "WARN")
                         # Fallback: &0&N from PNPDeviceID
                         if not port and "&MI_" not in pnp_id.upper():
                             m2 = re.search(r'&0&(\d+)$', pnp_id)
