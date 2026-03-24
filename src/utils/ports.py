@@ -195,7 +195,8 @@ def get_usb_devices():
                         all_usb_devs.append(dev)
                     except Exception:
                         continue
-                # Second pass: build device list
+                # Second pass: group devices by physical port
+                port_devices = {}  # port_num -> list of (name, vid_pid)
                 seen_vidpid = set()
                 for dev in all_usb_devs:
                     try:
@@ -210,21 +211,31 @@ def get_usb_devices():
                         service = getattr(dev, 'Service', '') or ""
                         if service.lower() in exclude_services:
                             continue
-                        # Extract VID:PID — skip duplicates
-                        vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
+                        vp = re.search(
+                            r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
+                        if vid_pid and vid_pid in seen_vidpid:
+                            continue
                         if vid_pid:
-                            if vid_pid in seen_vidpid:
-                                continue
                             seen_vidpid.add(vid_pid)
-                        # Get port number from pre-built map
                         port_num = vidpid_port.get(vid_pid, "")
-                        label = f"USB{port_num}: {name}" if port_num else f"USB: {name}"
-                        if vid_pid:
-                            label += f" [{vid_pid}]"
-                        devices.append(label)
+                        key = port_num or f"_no_port_{len(port_devices)}"
+                        if port_num and port_num in port_devices:
+                            port_devices[port_num].append((name, vid_pid))
+                        else:
+                            port_devices[key] = [(name, vid_pid)]
                     except Exception:
                         continue
+                # Build labels: group by port
+                for port_key, devs in port_devices.items():
+                    port = port_key if not port_key.startswith("_") else ""
+                    names = ", ".join(d[0] for d in devs)
+                    vids = ", ".join(d[1] for d in devs if d[1])
+                    prefix = f"USB{port}" if port else "USB"
+                    label = f"{prefix}: {names}"
+                    if vids:
+                        label += f" [{vids}]"
+                    devices.append(label)
             finally:
                 pythoncom.CoUninitialize()
 
