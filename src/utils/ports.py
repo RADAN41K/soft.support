@@ -178,20 +178,32 @@ def get_usb_devices():
                             continue
                         vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
-                        # Get port number from LocationInformation
+                        # Get port number: LocationInformation > Address > &0&N
+                        port = ""
                         try:
                             loc = dev.LocationInformation or ""
                         except Exception:
                             loc = ""
                         m = re.search(r'Port_#(\d+)', loc)
-                        if m and vid_pid and vid_pid not in vidpid_port:
-                            vidpid_port[vid_pid] = str(int(m.group(1)))
-                        # Fallback: port from ...&0&N format (skip MI_ interfaces)
-                        if vid_pid and vid_pid not in vidpid_port:
-                            if "&MI_" not in pnp_id.upper():
-                                m2 = re.search(r'&0&(\d+)$', pnp_id)
-                                if m2:
-                                    vidpid_port[vid_pid] = m2.group(1)
+                        if m:
+                            port = str(int(m.group(1)))
+                        # Fallback: DEVPKEY_Device_Address
+                        if not port:
+                            try:
+                                props = dev.GetDeviceProperties_(
+                                    ["DEVPKEY_Device_Address"])
+                                for p in props:
+                                    if p.Data is not None:
+                                        port = str(int(p.Data))
+                            except Exception:
+                                pass
+                        # Fallback: &0&N from PNPDeviceID
+                        if not port and "&MI_" not in pnp_id.upper():
+                            m2 = re.search(r'&0&(\d+)$', pnp_id)
+                            if m2:
+                                port = m2.group(1)
+                        if vid_pid and port and vid_pid not in vidpid_port:
+                            vidpid_port[vid_pid] = port
                         all_usb_devs.append(dev)
                     except Exception:
                         continue
