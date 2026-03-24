@@ -1,5 +1,6 @@
 import os
 import platform
+import re
 import sys
 import threading
 import tkinter
@@ -463,10 +464,12 @@ class SoftSupportApp(ctk.CTk):
 
         if usb_devices:
             for i, d in enumerate(usb_devices, 1):
-                if d.startswith("USB"):
-                    lines.append(f"  {d}")
+                # Strip [VID:PID] from display, keep in logs
+                display = re.sub(r'\s*\[[\dA-Fa-f:, ]+\]\s*$', '', d)
+                if display.startswith("USB"):
+                    lines.append(f"  {display}")
                 else:
-                    lines.append(f"  USB{i}: {d}")
+                    lines.append(f"  USB{i}: {display}")
         else:
             lines.append("  USB: немає пристроїв")
 
