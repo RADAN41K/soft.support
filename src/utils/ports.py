@@ -312,6 +312,8 @@ def get_usb_devices():
                 for vid_pid, info in vidpid_info.items():
                     filtered = bool(info["classes"] & hide_classes)
                     best_name = info["name"]
+                    log(f"USB debug: {best_name} [{vid_pid}] "
+                        f"classes={info['classes']} filtered={filtered}")
                     port_num = vidpid_port.get(vid_pid, "")
                     key = port_num or f"_no_port_{vid_pid}"
                     entry = (best_name, vid_pid, filtered)
