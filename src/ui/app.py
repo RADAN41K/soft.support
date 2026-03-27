@@ -464,12 +464,12 @@ class SoftSupportApp(ctk.CTk):
 
         if usb_devices:
             for i, d in enumerate(usb_devices, 1):
-                # Strip [VID:PID] from display, keep in logs
-                display = re.sub(r'\s*\[[\dA-Fa-f:, ]+\]\s*$', '', d)
-                if display.startswith("USB"):
-                    lines.append(f"  {display}")
+                # Show only port number in UI, full info in logs
+                m = re.match(r'(USB\d+)', d)
+                if m:
+                    lines.append(f"  {m.group(1)}")
                 else:
-                    lines.append(f"  USB{i}: {display}")
+                    lines.append(f"  USB{i}")
         else:
             lines.append("  USB: немає пристроїв")
 
