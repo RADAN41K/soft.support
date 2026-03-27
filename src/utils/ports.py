@@ -251,11 +251,10 @@ def get_usb_devices():
                 # First pass: collect port numbers for all USB VID devices
                 vidpid_port = {}
                 all_usb_devs = []
-                for dev in c.Win32_PnPEntity():
+                for dev in c.Win32_PnPEntity(
+                        where="PNPDeviceID LIKE 'USB\\\\VID_%'"):
                     try:
                         pnp_id = dev.PNPDeviceID or ""
-                        if not pnp_id.startswith("USB\\VID_"):
-                            continue
                         vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
                         # Get port number: LocationInfo > cfgmgr32 > &0&N
