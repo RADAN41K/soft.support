@@ -52,10 +52,6 @@ def log(message, level="INFO"):
     _write("limansoft", message, level)
 
 
-def log_device(message):
-    _write("devices", message)
-
-
 def log_startup():
     log("==============================================")
     log("=== ЗАПУСК LimanSoft Технічна підтримка ===")
@@ -64,8 +60,6 @@ def log_startup():
         f"Користувач: {os.environ.get('USERNAME', os.environ.get('USER', '?'))} | "
         f"Комп'ютер: {platform.node()}")
     log(f"ОС: {platform.system()} {platform.release()}")
-    log_device(f"[ПК] Запуск | Користувач: {os.environ.get('USERNAME', os.environ.get('USER', '?'))} | "
-               f"Комп'ютер: {platform.node()}")
 
 
 def cleanup_old_logs(days=30):

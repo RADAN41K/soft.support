@@ -12,7 +12,7 @@ from src.version import __version__
 from src.utils.qr import generate_qr
 from src.utils.ports import get_serial_ports, get_usb_devices
 from src.utils.network import get_local_ip, get_netbird_ip, get_radmin_ip
-from src.utils.logging import log, log_device, get_log_dir
+from src.utils.logging import log, get_log_dir
 from src.utils.autostart import is_autostart_enabled, set_autostart
 from src.utils.updater import check_and_apply_silently
 
@@ -160,7 +160,7 @@ class SoftSupportApp(ctk.CTk):
 
     def _tray_quit(self, *_args):
         log("Програма закрита користувачем")
-        log_device(f"[ПК] Програма зупинена користувачем "
+        log(f"[ПК] Програма зупинена користувачем "
                    f"{os.environ.get('USERNAME', os.environ.get('USER', '?'))}")
         if self._tray_icon:
             self._tray_icon.stop()
@@ -400,7 +400,7 @@ class SoftSupportApp(ctk.CTk):
         """Log value change if different from previous. Returns True if changed."""
         old_val = self._prev.get(key, "")
         if new_val != old_val:
-            log_device(f"{prefix}: '{old_val}' -> '{new_val}'")
+            log(f"{prefix}: '{old_val}' -> '{new_val}'")
             self._prev[key] = new_val
             return True
         return False
@@ -428,9 +428,9 @@ class SoftSupportApp(ctk.CTk):
             vpn_status = "on" if vpn_on else "off"
             if self._log_change("vpn_status", "[VPN] Статус", vpn_status):
                 if vpn_on:
-                    log_device(f"[VPN] NetBird ПІДКЛЮЧЕНИЙ | IP: {netbird_ip}")
+                    log(f"[VPN] NetBird ПІДКЛЮЧЕНИЙ | IP: {netbird_ip}")
                 else:
-                    log_device("[VPN] NetBird ВІДКЛЮЧЕНИЙ")
+                    log("[VPN] NetBird ВІДКЛЮЧЕНИЙ")
 
             self.after(0, lambda: self._update_ui(
                 serial_ports, usb_devices,
