@@ -226,12 +226,11 @@ def get_usb_devices():
                     r"root hub|host controller|generic hub|usb hub"
                     r"|internal|integrated",
                     re.IGNORECASE)
-                # Peripherals - log but hide from UI
-                hide = re.compile(
-                    r"fingerprint|biometric"
-                    r"|keyboard|mouse|bluetooth|wi-fi|wifi|wireless adapter"
-                    r"|bluecore",
-                    re.IGNORECASE)
+                # Device classes to hide from UI (log only)
+                hide_classes = {
+                    "hidclass", "bluetooth", "net", "media",
+                    "biometric", "camera",
+                }
                 # usbccgp = composite device wrapper (language-independent)
                 exclude_services = {"usbccgp"}
                 # Get physically connected USB device IDs
@@ -282,9 +281,8 @@ def get_usb_devices():
                         all_usb_devs.append(dev)
                     except Exception:
                         continue
-                # Second pass: collect all names per VID:PID
-                vidpid_names = {}  # vid_pid -> list of names
-                vidpid_dev = {}    # vid_pid -> first (name, pnp_id)
+                # Second pass: collect names and classes per VID:PID
+                vidpid_info = {}  # vid_pid -> {name, classes}
                 for dev in all_usb_devs:
                     try:
                         pnp_id = dev.PNPDeviceID or ""
@@ -301,16 +299,19 @@ def get_usb_devices():
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
                         if not vid_pid:
                             continue
-                        vidpid_names.setdefault(vid_pid, []).append(name)
-                        if vid_pid not in vidpid_dev:
-                            vidpid_dev[vid_pid] = (name, pnp_id)
+                        pnp_class = (getattr(dev, 'PNPClass', '') or
+                                     getattr(dev, 'ClassGuid', '') or "")
+                        info = vidpid_info.setdefault(
+                            vid_pid, {"name": name, "classes": set()})
+                        if pnp_class:
+                            info["classes"].add(pnp_class.lower())
                     except Exception:
                         continue
-                # Third pass: group by port, filter if any name matches hide
+                # Third pass: group by port, filter by device class
                 port_devices = {}
-                for vid_pid, names in vidpid_names.items():
-                    filtered = any(hide.search(n) for n in names)
-                    best_name = vidpid_dev[vid_pid][0]
+                for vid_pid, info in vidpid_info.items():
+                    filtered = bool(info["classes"] & hide_classes)
+                    best_name = info["name"]
                     port_num = vidpid_port.get(vid_pid, "")
                     key = port_num or f"_no_port_{vid_pid}"
                     entry = (best_name, vid_pid, filtered)
