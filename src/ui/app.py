@@ -62,6 +62,7 @@ class SoftSupportApp(ctk.CTk):
         # Collapsible sections state: {name: (button, content, row, expanded)}
         self._sections = {}
         self._port_count = 0
+        self._scan_error = False
         self._net_count = 0
 
         # Previous values for change detection
@@ -332,6 +333,14 @@ class SoftSupportApp(ctk.CTk):
             command=lambda: self._toggle_section(name))
         btn.grid(row=0, column=0, padx=5, pady=6, sticky="ew")
 
+        # Scan indicator dot (ports section only)
+        dot_label = None
+        if name == "ports":
+            dot_label = ctk.CTkLabel(
+                header, text="\u25CF", font=ctk.CTkFont(size=10),
+                text_color=BORDER_COLOR, fg_color="transparent", width=16)
+            dot_label.grid(row=0, column=1, padx=(0, 10))
+
         row += 1
 
         content = ctk.CTkFrame(self, fg_color=WHITE, border_width=1,
@@ -344,6 +353,7 @@ class SoftSupportApp(ctk.CTk):
             "row": row,
             "label": label,
             "expanded": False,
+            "dot": dot_label,
         }
 
         row += 1
@@ -387,6 +397,14 @@ class SoftSupportApp(ctk.CTk):
         sec = self._sections[name]
         arrow = "\u25BC" if sec["expanded"] else "\u25B6"
         sec["button"].configure(text=f"{arrow}  {sec['label']} ({count})")
+        if name == "ports" and sec.get("dot"):
+            if self._scanning:
+                color = ORANGE
+            elif self._scan_error:
+                color = "#DC2626"
+            else:
+                color = GREEN
+            sec["dot"].configure(text_color=color)
 
     # --- Auto refresh ---
     def _start_auto_refresh(self):
@@ -396,6 +414,7 @@ class SoftSupportApp(ctk.CTk):
     def _do_refresh(self):
         if not self._scanning:
             self._scanning = True
+            self._update_section_header("ports", self._port_count)
             threading.Thread(target=self._bg_scan, daemon=True).start()
         self.after(REFRESH_INTERVAL_MS, self._do_refresh)
 
@@ -410,6 +429,7 @@ class SoftSupportApp(ctk.CTk):
 
     def _bg_scan(self):
         try:
+            self._scan_error = False
             serial_ports = get_serial_ports()
             usb_devices, usb_all = get_usb_devices()
 
@@ -445,8 +465,11 @@ class SoftSupportApp(ctk.CTk):
             ))
         except Exception as e:
             log(f"[ERROR] bg_scan failed: {e}")
+            self._scan_error = True
         finally:
             self._scanning = False
+            self.after(0, lambda: self._update_section_header(
+                "ports", self._port_count))
 
     def _update_ui(self, serial_ports, usb_devices,
                    local_ip, netbird_ip, radmin_ip, vpn_on):
