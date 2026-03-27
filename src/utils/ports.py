@@ -137,6 +137,7 @@ INTERNAL_USB_KEYWORDS = [
     "generic hub", "usb3.0 hub", "usb2.0 hub",
     "keyboard", "mouse", "wi-fi", "wifi", "wireless adapter",
     "input device", "устройство ввода",
+    "bluecore",
 ]
 
 
@@ -220,7 +221,7 @@ def get_usb_devices():
                     r"root hub|host controller|generic hub|usb hub"
                     r"|fingerprint|internal|integrated|biometric"
                     r"|keyboard|mouse|bluetooth|wi-fi|wifi|wireless adapter"
-                    r"|input device|устройство ввода",
+                    r"|input device|устройство ввода|bluecore",
                     re.IGNORECASE)
                 # usbccgp = composite device wrapper (language-independent)
                 exclude_services = {"usbccgp"}
