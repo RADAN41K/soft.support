@@ -36,6 +36,8 @@ Name: "autostart"; Description: "Запускати при завантажен�
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "SoftSupport"; ValueData: """{app}\SoftSupport.exe"""; Flags: uninsdeletevalue; Tasks: autostart
+; Clean up legacy autostart entry
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "LimanSupport"; Flags: deletevalue
 
 [Run]
 Filename: "{app}\SoftSupport.exe"; Description: "Запустити LimanSoft Support"; Flags: nowait postinstall skipifsilent
