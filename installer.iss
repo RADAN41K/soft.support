@@ -39,6 +39,10 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 ; Clean up legacy autostart entry
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "LimanSupport"; Flags: deletevalue
 
+[InstallDelete]
+; Clean up old desktop shortcut
+Type: files; Name: "{userdesktop}\LimanSoft Support.lnk"
+
 [Run]
 Filename: "{app}\SoftSupport.exe"; Description: "Запустити LimanSoft Support"; Flags: nowait postinstall skipifsilent
 
