@@ -251,8 +251,9 @@ def get_usb_devices():
                 # First pass: collect port numbers for all USB VID devices
                 vidpid_port = {}
                 all_usb_devs = []
-                for dev in c.Win32_PnPEntity(
-                        where="PNPDeviceID LIKE 'USB\\\\VID_%'"):
+                for dev in c.query(
+                        "SELECT * FROM Win32_PnPEntity"
+                        " WHERE PNPDeviceID LIKE 'USB\\\\VID_%'"):
                     try:
                         pnp_id = dev.PNPDeviceID or ""
                         vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
