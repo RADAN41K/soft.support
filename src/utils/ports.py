@@ -299,6 +299,7 @@ def get_usb_devices():
                         if service.lower() in exclude_services:
                             continue
                         filtered = bool(hide.search(name))
+                        log(f"USB debug: {name} [{vid_pid}] filtered={filtered}")
                         vp = re.search(
                             r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
