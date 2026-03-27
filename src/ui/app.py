@@ -408,30 +408,17 @@ class SoftSupportApp(ctk.CTk):
     def _bg_scan(self):
         try:
             serial_ports = get_serial_ports()
-            usb_devices = get_usb_devices()
+            usb_devices, usb_all = get_usb_devices()
 
-            com_keys = frozenset(
-                f"{p['device']}: {p['description']} ({p['status']}) [{p['hwid']}]"
-                for p in serial_ports
-            )
-            usb_keys = frozenset(usb_devices)
+            usb_all_keys = frozenset(usb_all)
+            old_usb_all = self._prev.get("usb_all", frozenset())
 
-            old_com = self._prev.get("com", frozenset())
-            old_usb = self._prev.get("usb", frozenset())
-
-            if com_keys != old_com:
-                for d in sorted(com_keys):
-                    log(f"[COM] {d}")
-                if not com_keys:
-                    log("[COM] Немає")
-                self._prev["com"] = com_keys
-
-            if usb_keys != old_usb:
-                for d in sorted(usb_keys):
+            if usb_all_keys != old_usb_all:
+                for d in sorted(usb_all_keys):
                     log(f"[USB] {d}")
-                if not usb_keys:
+                if not usb_all_keys:
                     log("[USB] Немає")
-                self._prev["usb"] = usb_keys
+                self._prev["usb_all"] = usb_all_keys
 
             local_ip = get_local_ip()
             netbird_ip = get_netbird_ip()

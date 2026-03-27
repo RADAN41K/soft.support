@@ -99,16 +99,19 @@ def get_serial_ports():
     ports = []
     for port in serial.tools.list_ports.comports():
         lower = f"{port.device} {port.description}".lower()
-        if any(kw in lower for kw in INTERNAL_SERIAL_KEYWORDS):
-            continue
+        filtered = any(kw in lower for kw in INTERNAL_SERIAL_KEYWORDS)
 
         status = _check_port_status(port.device)
 
         # Log only on first scan or status change
         prev = _prev_com_status.get(port.device)
         if prev != status:
-            log(f"COM {port.device}: {status} | {port.description} | {port.hwid}")
+            log(f"COM scan: {port.device}: {status} | {port.description} | {port.hwid}"
+                f"{' (filtered)' if filtered else ''}")
             _prev_com_status[port.device] = status
+
+        if filtered:
+            continue
 
         ports.append({
             "device": port.device,
@@ -144,9 +147,14 @@ def _is_external(name: str) -> bool:
 
 
 def get_usb_devices():
-    """Get list of external USB devices based on OS."""
+    """Get list of external USB devices based on OS.
+
+    Returns (visible, all_found) where visible is filtered for UI
+    and all_found includes everything for logging.
+    """
     system = platform.system()
     devices = []
+    all_devices = []
 
     try:
         if system == "Darwin":
@@ -159,6 +167,7 @@ def get_usb_devices():
 
             def _save_device():
                 if current_device and not is_internal:
+                    all_devices.append(current_device)
                     if _is_external(current_device):
                         devices.append(current_device)
 
@@ -197,6 +206,7 @@ def get_usb_devices():
                         # Skip 1d6b:xxxx (Linux Foundation root hubs)
                         if vid_pid.startswith("1d6b:"):
                             continue
+                        all_devices.append(name.strip())
                         if _is_external(name):
                             devices.append(name.strip())
 
@@ -261,7 +271,7 @@ def get_usb_devices():
                     except Exception:
                         continue
                 # Second pass: group devices by physical port
-                port_devices = {}  # port_num -> list of (name, vid_pid)
+                port_devices = {}  # port_num -> list of (name, vid_pid, filtered)
                 seen_vidpid = set()
                 for dev in all_usb_devs:
                     try:
@@ -271,11 +281,11 @@ def get_usb_devices():
                         name = dev.Name or ""
                         if not name:
                             continue
-                        if exclude.search(name):
-                            continue
                         service = getattr(dev, 'Service', '') or ""
-                        if service.lower() in exclude_services:
-                            continue
+                        filtered = bool(
+                            exclude.search(name)
+                            or service.lower() in exclude_services
+                        )
                         vp = re.search(
                             r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
@@ -286,17 +296,30 @@ def get_usb_devices():
                         port_num = vidpid_port.get(vid_pid, "")
                         key = port_num or f"_no_port_{len(port_devices)}"
                         if port_num and port_num in port_devices:
-                            port_devices[port_num].append((name, vid_pid))
+                            port_devices[port_num].append((name, vid_pid, filtered))
                         else:
-                            port_devices[key] = [(name, vid_pid)]
+                            port_devices[key] = [(name, vid_pid, filtered)]
                     except Exception:
                         continue
                 # Build labels: group by port
+                all_devices = []
                 for port_key, devs in port_devices.items():
                     port = port_key if not port_key.startswith("_") else ""
-                    names = ", ".join(d[0] for d in devs)
-                    vids = ", ".join(d[1] for d in devs if d[1])
                     prefix = f"USB{port}" if port else "USB"
+                    # All devices for logging
+                    for d in devs:
+                        names_all = d[0]
+                        vids_all = d[1] or ""
+                        lbl = f"{prefix}: {names_all}"
+                        if vids_all:
+                            lbl += f" [{vids_all}]"
+                        all_devices.append(lbl)
+                    # Only show non-filtered in UI
+                    visible = [d for d in devs if not d[2]]
+                    if not visible:
+                        continue
+                    names = ", ".join(d[0] for d in visible)
+                    vids = ", ".join(d[1] for d in visible if d[1])
                     label = f"{prefix}: {names}"
                     if vids:
                         label += f" [{vids}]"
@@ -307,4 +330,4 @@ def get_usb_devices():
     except Exception as e:
         log(f"USB помилка: {e}", "WARN")
 
-    return devices
+    return devices, all_devices
