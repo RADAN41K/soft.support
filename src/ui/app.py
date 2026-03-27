@@ -410,14 +410,28 @@ class SoftSupportApp(ctk.CTk):
             serial_ports = get_serial_ports()
             usb_devices = get_usb_devices()
 
-            com_str = ", ".join(
+            com_keys = frozenset(
                 f"{p['device']}: {p['description']} ({p['status']}) [{p['hwid']}]"
                 for p in serial_ports
-            ) if serial_ports else "Немає"
-            usb_str = ", ".join(usb_devices) if usb_devices else "Немає"
+            )
+            usb_keys = frozenset(usb_devices)
 
-            self._log_change("com", "[COM] Порти змінено", com_str)
-            self._log_change("usb", "[USB] Порти змінено", usb_str)
+            old_com = self._prev.get("com", frozenset())
+            old_usb = self._prev.get("usb", frozenset())
+
+            if com_keys != old_com:
+                for d in sorted(com_keys):
+                    log(f"[COM] {d}")
+                if not com_keys:
+                    log("[COM] Немає")
+                self._prev["com"] = com_keys
+
+            if usb_keys != old_usb:
+                for d in sorted(usb_keys):
+                    log(f"[USB] {d}")
+                if not usb_keys:
+                    log("[USB] Немає")
+                self._prev["usb"] = usb_keys
 
             local_ip = get_local_ip()
             netbird_ip = get_netbird_ip()
