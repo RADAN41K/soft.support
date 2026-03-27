@@ -410,7 +410,10 @@ class SoftSupportApp(ctk.CTk):
             serial_ports = get_serial_ports()
             usb_devices = get_usb_devices()
 
-            com_str = ", ".join(p["device"] for p in serial_ports) if serial_ports else "Немає"
+            com_str = ", ".join(
+                f"{p['device']}: {p['description']} ({p['status']}) [{p['hwid']}]"
+                for p in serial_ports
+            ) if serial_ports else "Немає"
             usb_str = ", ".join(usb_devices) if usb_devices else "Немає"
 
             self._log_change("com", "[COM] Порти змінено", com_str)
