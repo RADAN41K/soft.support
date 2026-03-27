@@ -253,9 +253,11 @@ def get_usb_devices():
                 all_usb_devs = []
                 for dev in c.query(
                         "SELECT * FROM Win32_PnPEntity"
-                        " WHERE PNPDeviceID LIKE 'USB\\\\VID_%'"):
+                        " WHERE PNPDeviceID LIKE 'USB%'"):
                     try:
                         pnp_id = dev.PNPDeviceID or ""
+                        if not pnp_id.startswith("USB\\VID_"):
+                            continue
                         vp = re.search(r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
                         # Get port number: LocationInfo > cfgmgr32 > &0&N
