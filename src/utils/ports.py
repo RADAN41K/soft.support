@@ -282,39 +282,42 @@ def get_usb_devices():
                         all_usb_devs.append(dev)
                     except Exception:
                         continue
-                # Second pass: group devices by physical port
-                port_devices = {}  # port_num -> list of (name, vid_pid, filtered)
-                seen_vidpid = set()
+                # Second pass: collect all names per VID:PID
+                vidpid_names = {}  # vid_pid -> list of names
+                vidpid_dev = {}    # vid_pid -> first (name, pnp_id)
                 for dev in all_usb_devs:
                     try:
                         pnp_id = dev.PNPDeviceID or ""
                         if pnp_id.upper() not in connected_ids:
                             continue
                         name = dev.Name or ""
-                        if not name:
-                            continue
-                        if skip.search(name):
+                        if not name or skip.search(name):
                             continue
                         service = getattr(dev, 'Service', '') or ""
                         if service.lower() in exclude_services:
                             continue
-                        filtered = bool(hide.search(name))
-                        log(f"USB debug: {name} [{vid_pid}] filtered={filtered}")
                         vp = re.search(
                             r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
-                        if vid_pid and vid_pid in seen_vidpid:
+                        if not vid_pid:
                             continue
-                        if vid_pid:
-                            seen_vidpid.add(vid_pid)
-                        port_num = vidpid_port.get(vid_pid, "")
-                        key = port_num or f"_no_port_{len(port_devices)}"
-                        if port_num and port_num in port_devices:
-                            port_devices[port_num].append((name, vid_pid, filtered))
-                        else:
-                            port_devices[key] = [(name, vid_pid, filtered)]
+                        vidpid_names.setdefault(vid_pid, []).append(name)
+                        if vid_pid not in vidpid_dev:
+                            vidpid_dev[vid_pid] = (name, pnp_id)
                     except Exception:
                         continue
+                # Third pass: group by port, filter if any name matches hide
+                port_devices = {}
+                for vid_pid, names in vidpid_names.items():
+                    filtered = any(hide.search(n) for n in names)
+                    best_name = vidpid_dev[vid_pid][0]
+                    port_num = vidpid_port.get(vid_pid, "")
+                    key = port_num or f"_no_port_{vid_pid}"
+                    entry = (best_name, vid_pid, filtered)
+                    if port_num and port_num in port_devices:
+                        port_devices[port_num].append(entry)
+                    else:
+                        port_devices[key] = [entry]
                 # Build labels: group by port
                 all_devices = []
                 for port_key, devs in port_devices.items():
