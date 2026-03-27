@@ -60,6 +60,7 @@ def log_startup():
         f"Користувач: {os.environ.get('USERNAME', os.environ.get('USER', '?'))} | "
         f"Комп'ютер: {platform.node()}")
     log(f"ОС: {platform.system()} {platform.release()}")
+    log("---")
 
 
 def cleanup_old_logs(days=30):

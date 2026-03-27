@@ -106,7 +106,7 @@ def get_serial_ports():
         # Log only on first scan or status change
         prev = _prev_com_status.get(port.device)
         if prev != status:
-            log(f"COM scan: {port.device}: {status} | {port.description} | {port.hwid}"
+            log(f"[COM] {port.device}: {status} | {port.description} | {port.hwid}"
                 f"{' (filtered)' if filtered else ''}")
             _prev_com_status[port.device] = status
 
@@ -217,9 +217,14 @@ def get_usb_devices():
             pythoncom.CoInitialize()
             try:
                 c = wmi.WMI()
-                exclude = re.compile(
+                # Infrastructure - skip entirely (no log, no UI)
+                skip = re.compile(
                     r"root hub|host controller|generic hub|usb hub"
-                    r"|fingerprint|internal|integrated|biometric"
+                    r"|internal|integrated",
+                    re.IGNORECASE)
+                # Peripherals - log but hide from UI
+                hide = re.compile(
+                    r"fingerprint|biometric"
                     r"|keyboard|mouse|bluetooth|wi-fi|wifi|wireless adapter"
                     r"|input device|устройство ввода|bluecore",
                     re.IGNORECASE)
@@ -282,11 +287,12 @@ def get_usb_devices():
                         name = dev.Name or ""
                         if not name:
                             continue
+                        if skip.search(name):
+                            continue
                         service = getattr(dev, 'Service', '') or ""
-                        filtered = bool(
-                            exclude.search(name)
-                            or service.lower() in exclude_services
-                        )
+                        if service.lower() in exclude_services:
+                            continue
+                        filtered = bool(hide.search(name))
                         vp = re.search(
                             r'VID_([0-9A-Fa-f]+)&PID_([0-9A-Fa-f]+)', pnp_id)
                         vid_pid = f"{vp.group(1)}:{vp.group(2)}" if vp else ""
