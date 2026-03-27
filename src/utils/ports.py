@@ -146,12 +146,17 @@ def _is_external(name: str) -> bool:
     return not any(kw in lower for kw in INTERNAL_USB_KEYWORDS)
 
 
+_prev_usb_result = ([], [])
+
+
 def get_usb_devices():
     """Get list of external USB devices based on OS.
 
     Returns (visible, all_found) where visible is filtered for UI
     and all_found includes everything for logging.
+    On error returns last successful result.
     """
+    global _prev_usb_result
     system = platform.system()
     devices = []
     all_devices = []
@@ -335,5 +340,7 @@ def get_usb_devices():
 
     except Exception as e:
         log(f"USB помилка: {e}", "WARN")
+        return _prev_usb_result
 
+    _prev_usb_result = (devices, all_devices)
     return devices, all_devices

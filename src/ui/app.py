@@ -390,10 +390,13 @@ class SoftSupportApp(ctk.CTk):
 
     # --- Auto refresh ---
     def _start_auto_refresh(self):
+        self._scanning = False
         self._do_refresh()
 
     def _do_refresh(self):
-        threading.Thread(target=self._bg_scan, daemon=True).start()
+        if not self._scanning:
+            self._scanning = True
+            threading.Thread(target=self._bg_scan, daemon=True).start()
         self.after(REFRESH_INTERVAL_MS, self._do_refresh)
 
     def _log_change(self, key, prefix, new_val):
@@ -442,6 +445,8 @@ class SoftSupportApp(ctk.CTk):
             ))
         except Exception as e:
             log(f"[ERROR] bg_scan failed: {e}")
+        finally:
+            self._scanning = False
 
     def _update_ui(self, serial_ports, usb_devices,
                    local_ip, netbird_ip, radmin_ip, vpn_on):
