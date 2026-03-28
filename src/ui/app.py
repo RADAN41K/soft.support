@@ -15,9 +15,9 @@ from src.utils.network import get_local_ip, get_netbird_ip, get_radmin_ip
 from src.utils.logging import log, get_log_dir
 from src.utils.autostart import is_autostart_enabled, set_autostart
 from src.utils.updater import check_and_apply_silently
+from src.utils.watcher import DeviceWatcher
 
 EDIT_PASSWORD = "258456"
-REFRESH_INTERVAL_MS = 3000
 
 # Brand colors
 ORANGE = "#FF6600"
@@ -71,7 +71,7 @@ class SoftSupportApp(ctk.CTk):
         self._build_ui()
         self._load_data()
         self._setup_tray()
-        self._start_auto_refresh()
+        self._start_watcher()
         self.resizable(True, False)
         self.after(300, self._fit_height)
         self.after(1000, self._fit_height)
@@ -406,17 +406,23 @@ class SoftSupportApp(ctk.CTk):
                 color = GREEN
             sec["dot"].configure(text_color=color)
 
-    # --- Auto refresh ---
-    def _start_auto_refresh(self):
+    # --- Event-driven refresh ---
+    def _start_watcher(self):
         self._scanning = False
-        self._do_refresh()
+        self._watcher = DeviceWatcher(on_change=self._on_device_change)
+        self._watcher.start()
+        # Initial scan
+        self._trigger_scan()
 
-    def _do_refresh(self):
+    def _on_device_change(self):
+        """Called from watcher thread when device/network change detected."""
+        self.after(0, self._trigger_scan)
+
+    def _trigger_scan(self):
         if not self._scanning:
             self._scanning = True
             self._update_section_header("ports", self._port_count)
             threading.Thread(target=self._bg_scan, daemon=True).start()
-        self.after(REFRESH_INTERVAL_MS, self._do_refresh)
 
     def _log_change(self, key, prefix, new_val):
         """Log value change if different from previous. Returns True if changed."""
