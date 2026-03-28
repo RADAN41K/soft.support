@@ -413,11 +413,11 @@ class SoftSupportApp(ctk.CTk):
         self._watcher = DeviceWatcher(
             on_device_change=lambda: self.after(0, self._trigger_device_scan),
             on_network_change=lambda: self.after(0, self._trigger_network_scan),
-            on_full_scan=lambda: self.after(0, self._trigger_full_scan),
         )
         self._watcher.start()
-        # Initial full scan
-        self._trigger_full_scan()
+        # Initial scan
+        self._trigger_device_scan()
+        self._trigger_network_scan()
 
     def _trigger_device_scan(self):
         if not self._scanning_devices:
@@ -431,10 +431,6 @@ class SoftSupportApp(ctk.CTk):
             self._scanning_network = True
             threading.Thread(
                 target=self._bg_scan_network, daemon=True).start()
-
-    def _trigger_full_scan(self):
-        self._trigger_device_scan()
-        self._trigger_network_scan()
 
     def _log_change(self, key, prefix, new_val):
         """Log value change if different from previous. Returns True if changed."""

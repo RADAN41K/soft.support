@@ -7,7 +7,6 @@ Replaces 3-second polling with OS-level event listeners:
 - Linux network: netlink socket (RTMGRP_IPV4_IFADDR)
 - Windows network: NotifyAddrChange (iphlpapi.dll)
 - macOS network: lightweight IP polling (no subprocess)
-- Fallback: 30-second full scan on all platforms
 """
 import platform
 import socket
@@ -16,7 +15,6 @@ import threading
 from src.utils.logging import log
 
 _DEBOUNCE_SEC = 1.5
-_FALLBACK_TIMEOUT = 60
 _NET_POLL_INTERVAL = 15
 
 
@@ -27,10 +25,9 @@ class DeviceWatcher:
     can run only the relevant scan instead of a full rescan.
     """
 
-    def __init__(self, on_device_change, on_network_change, on_full_scan):
+    def __init__(self, on_device_change, on_network_change):
         self._on_device = on_device_change
         self._on_network = on_network_change
-        self._on_full = on_full_scan
         self._dev_event = threading.Event()
         self._net_event = threading.Event()
         self._stop = threading.Event()
@@ -53,9 +50,6 @@ class DeviceWatcher:
         ).start()
         threading.Thread(
             target=self._network_dispatch, daemon=True
-        ).start()
-        threading.Thread(
-            target=self._fallback_loop, daemon=True
         ).start()
 
     def trigger(self):
@@ -96,13 +90,6 @@ class DeviceWatcher:
             self._stop.wait(_DEBOUNCE_SEC)
             self._net_event.clear()
             self._on_network()
-
-    def _fallback_loop(self):
-        while not self._stop.is_set():
-            self._stop.wait(_FALLBACK_TIMEOUT)
-            if self._stop.is_set():
-                break
-            self._on_full()
 
     # --- Device watchers ---
 
