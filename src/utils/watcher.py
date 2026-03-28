@@ -7,7 +7,7 @@ Replaces 3-second polling with OS-level event listeners:
 - Linux network: netlink socket (RTMGRP_IPV4_IFADDR)
 - Windows network: NotifyAddrChange (iphlpapi.dll)
 - macOS network: lightweight IP polling (no subprocess)
-- Fallback: 30-second timeout on all platforms
+- Fallback: 30-second full scan on all platforms
 """
 import platform
 import socket
@@ -16,16 +16,24 @@ import threading
 from src.utils.logging import log
 
 _DEBOUNCE_SEC = 1.5
+_COOLDOWN_SEC = 10
 _FALLBACK_TIMEOUT = 30
 _NET_POLL_INTERVAL = 15
 
 
 class DeviceWatcher:
-    """Cross-platform event-driven watcher for device and network changes."""
+    """Cross-platform event-driven watcher for device and network changes.
 
-    def __init__(self, on_change):
-        self._on_change = on_change
-        self._event = threading.Event()
+    Fires separate callbacks for device vs network events so the app
+    can run only the relevant scan instead of a full rescan.
+    """
+
+    def __init__(self, on_device_change, on_network_change, on_full_scan):
+        self._on_device = on_device_change
+        self._on_network = on_network_change
+        self._on_full = on_full_scan
+        self._dev_event = threading.Event()
+        self._net_event = threading.Event()
         self._stop = threading.Event()
         self._iokit_runloop = None
 
@@ -42,16 +50,24 @@ class DeviceWatcher:
         self._start_network_watcher()
 
         threading.Thread(
-            target=self._dispatch_loop, daemon=True
+            target=self._device_dispatch, daemon=True
+        ).start()
+        threading.Thread(
+            target=self._network_dispatch, daemon=True
+        ).start()
+        threading.Thread(
+            target=self._fallback_loop, daemon=True
         ).start()
 
     def trigger(self):
-        """Manually trigger a rescan."""
-        self._event.set()
+        """Manually trigger a full rescan."""
+        self._dev_event.set()
+        self._net_event.set()
 
     def stop(self):
         self._stop.set()
-        self._event.set()
+        self._dev_event.set()
+        self._net_event.set()
         if self._iokit_runloop:
             import ctypes
             cf = ctypes.cdll.LoadLibrary(
@@ -60,17 +76,34 @@ class DeviceWatcher:
             cf.CFRunLoopStop.argtypes = [ctypes.c_void_p]
             cf.CFRunLoopStop(self._iokit_runloop)
 
-    def _dispatch_loop(self):
+    # --- Dispatch loops ---
+
+    def _device_dispatch(self):
         while not self._stop.is_set():
-            triggered = self._event.wait(timeout=_FALLBACK_TIMEOUT)
+            self._dev_event.wait()
             if self._stop.is_set():
                 break
-            self._event.clear()
-            # Debounce: let rapid events settle
-            if triggered:
-                self._stop.wait(_DEBOUNCE_SEC)
-                self._event.clear()
-            self._on_change()
+            self._dev_event.clear()
+            self._stop.wait(_DEBOUNCE_SEC)
+            self._dev_event.clear()
+            self._on_device()
+
+    def _network_dispatch(self):
+        while not self._stop.is_set():
+            self._net_event.wait()
+            if self._stop.is_set():
+                break
+            self._net_event.clear()
+            self._stop.wait(_DEBOUNCE_SEC)
+            self._net_event.clear()
+            self._on_network()
+
+    def _fallback_loop(self):
+        while not self._stop.is_set():
+            self._stop.wait(_FALLBACK_TIMEOUT)
+            if self._stop.is_set():
+                break
+            self._on_full()
 
     # --- Device watchers ---
 
@@ -116,13 +149,12 @@ class DeviceWatcher:
 
             # Keep strong reference to prevent GC crash
             def _on_usb_event(_refcon, iterator):
-                # Drain iterator to arm next notification
                 while True:
                     obj = iokit.IOIteratorNext(iterator)
                     if not obj:
                         break
                     iokit.IOObjectRelease(obj)
-                self._event.set()
+                self._dev_event.set()
 
             self._iokit_callback = CALLBACK(_on_usb_event)
 
@@ -134,17 +166,10 @@ class DeviceWatcher:
             run_loop = cf.CFRunLoopGetCurrent()
             self._iokit_runloop = run_loop
 
-            # kCFRunLoopDefaultMode
-            mode = cf.CFStringCreateWithCString(
-                None, b"kCFRunLoopDefaultMode", 0
-            ) if hasattr(cf, "CFStringCreateWithCString") else None
-
-            # Use raw pointer for default mode
             cf.CFRunLoopAddSource(run_loop, source,
                                   ctypes.c_void_p.in_dll(
                                       cf, "kCFRunLoopDefaultMode"))
 
-            # Register for matched + terminated on IOUSBHostDevice
             for service_class in [b"IOUSBHostDevice", b"IOUSBDevice"]:
                 for notif_type in [b"IOServiceMatched",
                                    b"IOServiceTerminate"]:
@@ -156,7 +181,6 @@ class DeviceWatcher:
                         port, notif_type, matching,
                         self._iokit_callback, None, byref(iterator))
                     if kr == 0:
-                        # Drain iterator to arm notification
                         while True:
                             obj = iokit.IOIteratorNext(iterator)
                             if not obj:
@@ -168,7 +192,7 @@ class DeviceWatcher:
 
         except Exception as e:
             log(f"[WATCHER] IOKit failed: {e}, fallback to /dev", "WARN")
-            self._start_dev_watcher_sync()
+            self._start_dev_watcher()
 
     def _start_dev_watcher(self):
         """Linux: watch /dev for device file changes."""
@@ -180,10 +204,10 @@ class DeviceWatcher:
 
             class _DevHandler(FileSystemEventHandler):
                 def on_created(self, event):
-                    parent._event.set()
+                    parent._dev_event.set()
 
                 def on_deleted(self, event):
-                    parent._event.set()
+                    parent._dev_event.set()
 
             observer = Observer()
             observer.schedule(_DevHandler(), "/dev", recursive=False)
@@ -192,10 +216,6 @@ class DeviceWatcher:
             log("[WATCHER] /dev listener started")
         except Exception as e:
             log(f"[WATCHER] /dev watcher failed: {e}", "WARN")
-
-    def _start_dev_watcher_sync(self):
-        """Fallback /dev watcher (called from IOKit thread on failure)."""
-        self._start_dev_watcher()
 
     def _start_wmi_watcher(self):
         """Windows: WMI event subscription for USB device changes."""
@@ -210,7 +230,10 @@ class DeviceWatcher:
                 while not self._stop.is_set():
                     try:
                         watcher(timeout_ms=2000)
-                        self._event.set()
+                        self._dev_event.set()
+                        # WMI fires noisy events (HID, power management);
+                        # cooldown prevents constant rescanning
+                        self._stop.wait(_COOLDOWN_SEC)
                     except wmi_mod.x_wmi_timed_out:
                         continue
             except Exception as e:
@@ -235,7 +258,6 @@ class DeviceWatcher:
     def _watch_network_linux(self):
         """Linux: netlink socket for IP address change events."""
         try:
-            # AF_NETLINK=16, NETLINK_ROUTE=0, RTMGRP_IPV4_IFADDR=0x10
             sock = socket.socket(16, socket.SOCK_DGRAM, 0)
             sock.bind((0, 0x10))
             sock.settimeout(2)
@@ -244,7 +266,7 @@ class DeviceWatcher:
                 try:
                     data = sock.recv(4096)
                     if data:
-                        self._event.set()
+                        self._net_event.set()
                 except socket.timeout:
                     continue
         except Exception as e:
@@ -263,7 +285,7 @@ class DeviceWatcher:
                 ret = iphlpapi.NotifyAddrChange(
                     ctypes.byref(handle), None)
                 if ret == 0:
-                    self._event.set()
+                    self._net_event.set()
                 else:
                     self._stop.wait(30)
         except Exception as e:
@@ -284,6 +306,6 @@ class DeviceWatcher:
             except OSError:
                 ip = None
             if ip != last_ip and last_ip is not None:
-                self._event.set()
+                self._net_event.set()
             last_ip = ip
             self._stop.wait(_NET_POLL_INTERVAL)

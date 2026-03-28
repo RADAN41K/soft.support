@@ -398,7 +398,7 @@ class SoftSupportApp(ctk.CTk):
         arrow = "\u25BC" if sec["expanded"] else "\u25B6"
         sec["button"].configure(text=f"{arrow}  {sec['label']} ({count})")
         if name == "ports" and sec.get("dot"):
-            if self._scanning:
+            if self._scanning_devices:
                 color = ORANGE
             elif self._scan_error:
                 color = "#DC2626"
@@ -408,21 +408,33 @@ class SoftSupportApp(ctk.CTk):
 
     # --- Event-driven refresh ---
     def _start_watcher(self):
-        self._scanning = False
-        self._watcher = DeviceWatcher(on_change=self._on_device_change)
+        self._scanning_devices = False
+        self._scanning_network = False
+        self._watcher = DeviceWatcher(
+            on_device_change=lambda: self.after(0, self._trigger_device_scan),
+            on_network_change=lambda: self.after(0, self._trigger_network_scan),
+            on_full_scan=lambda: self.after(0, self._trigger_full_scan),
+        )
         self._watcher.start()
-        # Initial scan
-        self._trigger_scan()
+        # Initial full scan
+        self._trigger_full_scan()
 
-    def _on_device_change(self):
-        """Called from watcher thread when device/network change detected."""
-        self.after(0, self._trigger_scan)
-
-    def _trigger_scan(self):
-        if not self._scanning:
-            self._scanning = True
+    def _trigger_device_scan(self):
+        if not self._scanning_devices:
+            self._scanning_devices = True
             self._update_section_header("ports", self._port_count)
-            threading.Thread(target=self._bg_scan, daemon=True).start()
+            threading.Thread(
+                target=self._bg_scan_devices, daemon=True).start()
+
+    def _trigger_network_scan(self):
+        if not self._scanning_network:
+            self._scanning_network = True
+            threading.Thread(
+                target=self._bg_scan_network, daemon=True).start()
+
+    def _trigger_full_scan(self):
+        self._trigger_device_scan()
+        self._trigger_network_scan()
 
     def _log_change(self, key, prefix, new_val):
         """Log value change if different from previous. Returns True if changed."""
@@ -433,7 +445,7 @@ class SoftSupportApp(ctk.CTk):
             return True
         return False
 
-    def _bg_scan(self):
+    def _bg_scan_devices(self):
         try:
             self._scan_error = False
             serial_ports = get_serial_ports()
@@ -449,6 +461,18 @@ class SoftSupportApp(ctk.CTk):
                     log("[USB] Немає")
                 self._prev["usb_all"] = usb_all_keys
 
+            self.after(0, lambda: self._update_ports_ui(
+                serial_ports, usb_devices))
+        except Exception as e:
+            log(f"[ERROR] device scan failed: {e}")
+            self._scan_error = True
+        finally:
+            self._scanning_devices = False
+            self.after(0, lambda: self._update_section_header(
+                "ports", self._port_count))
+
+    def _bg_scan_network(self):
+        try:
             local_ip = get_local_ip()
             netbird_ip = get_netbird_ip()
             radmin_ip = get_radmin_ip()
@@ -465,21 +489,14 @@ class SoftSupportApp(ctk.CTk):
                 else:
                     log("[VPN] NetBird ВІДКЛЮЧЕНИЙ")
 
-            self.after(0, lambda: self._update_ui(
-                serial_ports, usb_devices,
-                local_ip, netbird_ip, radmin_ip, vpn_on
-            ))
+            self.after(0, lambda: self._update_network_ui(
+                local_ip, netbird_ip, radmin_ip, vpn_on))
         except Exception as e:
-            log(f"[ERROR] bg_scan failed: {e}")
-            self._scan_error = True
+            log(f"[ERROR] network scan failed: {e}")
         finally:
-            self._scanning = False
-            self.after(0, lambda: self._update_section_header(
-                "ports", self._port_count))
+            self._scanning_network = False
 
-    def _update_ui(self, serial_ports, usb_devices,
-                   local_ip, netbird_ip, radmin_ip, vpn_on):
-        # Ports — build new text, only rewrite if changed
+    def _update_ports_ui(self, serial_ports, usb_devices):
         lines = []
         com_shown = 0
         for p in serial_ports:
@@ -502,7 +519,6 @@ class SoftSupportApp(ctk.CTk):
 
         if usb_devices:
             for i, d in enumerate(usb_devices, 1):
-                # Show only port number in UI, full info in logs
                 m = re.match(r'(USB\d+)', d)
                 if m:
                     lines.append(f"  {m.group(1)}")
@@ -519,19 +535,18 @@ class SoftSupportApp(ctk.CTk):
             self.ports_text.insert("end", new_text)
             self.ports_text.configure(state="disabled")
 
-        # Update counts and headers
         self._port_count = com_shown + len(usb_devices)
-        self._net_count = sum(1 for ip in [local_ip, netbird_ip, radmin_ip]
-                              if _is_active_ip(ip))
         self._update_section_header("ports", self._port_count)
-        self._update_section_header("net", self._net_count)
 
-        # Network
+    def _update_network_ui(self, local_ip, netbird_ip, radmin_ip, vpn_on):
         self.lbl_local_ip.configure(text=local_ip)
         self.lbl_netbird.configure(text=netbird_ip)
         self.lbl_radmin.configure(text=radmin_ip)
 
-        # VPN bar
+        self._net_count = sum(1 for ip in [local_ip, netbird_ip, radmin_ip]
+                              if _is_active_ip(ip))
+        self._update_section_header("net", self._net_count)
+
         if vpn_on:
             self.vpn_bar.configure(fg_color=GREEN)
             self.lbl_vpn_status.configure(
