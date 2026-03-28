@@ -16,8 +16,7 @@ import threading
 from src.utils.logging import log
 
 _DEBOUNCE_SEC = 1.5
-_COOLDOWN_SEC = 10
-_FALLBACK_TIMEOUT = 30
+_FALLBACK_TIMEOUT = 60
 _NET_POLL_INTERVAL = 15
 
 
@@ -218,22 +217,23 @@ class DeviceWatcher:
             log(f"[WATCHER] /dev watcher failed: {e}", "WARN")
 
     def _start_wmi_watcher(self):
-        """Windows: WMI event subscription for USB device changes."""
+        """Windows: WMI subscription for USB connect/disconnect only."""
         def _watch():
             import pythoncom
             import wmi as wmi_mod
             pythoncom.CoInitialize()
             try:
                 w = wmi_mod.WMI()
-                watcher = w.Win32_DeviceChangeEvent.watch_for()
-                log("[WATCHER] WMI device listener started")
+                # Watch USB controller-device associations only;
+                # fires on real USB plug/unplug, ignores HID/power noise
+                wql = ("SELECT * FROM __InstanceOperationEvent WITHIN 3 "
+                       "WHERE TargetInstance ISA 'Win32_USBControllerDevice'")
+                watcher = w.watch_for(raw_wql=wql)
+                log("[WATCHER] WMI USB listener started")
                 while not self._stop.is_set():
                     try:
-                        watcher(timeout_ms=2000)
+                        watcher(timeout_ms=5000)
                         self._dev_event.set()
-                        # WMI fires noisy events (HID, power management);
-                        # cooldown prevents constant rescanning
-                        self._stop.wait(_COOLDOWN_SEC)
                     except wmi_mod.x_wmi_timed_out:
                         continue
             except Exception as e:
