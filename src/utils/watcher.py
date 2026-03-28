@@ -1,12 +1,13 @@
 """Event-driven device and network change watcher.
 
 Replaces 3-second polling with OS-level event listeners:
-- macOS/Linux: watchdog on /dev for USB/COM changes
+- macOS: IOKit USB notifications (instant) via ctypes
+- Linux: watchdog on /dev for USB/COM changes
 - Windows: WMI Win32_DeviceChangeEvent subscription
 - Linux network: netlink socket (RTMGRP_IPV4_IFADDR)
 - Windows network: NotifyAddrChange (iphlpapi.dll)
 - macOS network: lightweight IP polling (no subprocess)
-- Fallback: 10-second timeout on all platforms
+- Fallback: 30-second timeout on all platforms
 """
 import platform
 import socket
@@ -15,7 +16,7 @@ import threading
 from src.utils.logging import log
 
 _DEBOUNCE_SEC = 1.5
-_FALLBACK_TIMEOUT = 10
+_FALLBACK_TIMEOUT = 30
 _NET_POLL_INTERVAL = 15
 
 
@@ -26,11 +27,14 @@ class DeviceWatcher:
         self._on_change = on_change
         self._event = threading.Event()
         self._stop = threading.Event()
+        self._iokit_runloop = None
 
     def start(self):
         system = platform.system()
 
-        if system in ("Darwin", "Linux"):
+        if system == "Darwin":
+            self._start_iokit_watcher()
+        elif system == "Linux":
             self._start_dev_watcher()
         elif system == "Windows":
             self._start_wmi_watcher()
@@ -48,6 +52,13 @@ class DeviceWatcher:
     def stop(self):
         self._stop.set()
         self._event.set()
+        if self._iokit_runloop:
+            import ctypes
+            cf = ctypes.cdll.LoadLibrary(
+                "/System/Library/Frameworks/"
+                "CoreFoundation.framework/CoreFoundation")
+            cf.CFRunLoopStop.argtypes = [ctypes.c_void_p]
+            cf.CFRunLoopStop(self._iokit_runloop)
 
     def _dispatch_loop(self):
         while not self._stop.is_set():
@@ -55,7 +66,7 @@ class DeviceWatcher:
             if self._stop.is_set():
                 break
             self._event.clear()
-            # Debounce: let rapid events settle (e.g. USB plug fires many /dev changes)
+            # Debounce: let rapid events settle
             if triggered:
                 self._stop.wait(_DEBOUNCE_SEC)
                 self._event.clear()
@@ -63,8 +74,104 @@ class DeviceWatcher:
 
     # --- Device watchers ---
 
+    def _start_iokit_watcher(self):
+        """macOS: IOKit USB notifications via ctypes. Instant detection."""
+        threading.Thread(
+            target=self._run_iokit, daemon=True
+        ).start()
+
+    def _run_iokit(self):
+        try:
+            import ctypes
+            from ctypes import c_void_p, c_char_p, c_int32, byref, CFUNCTYPE
+
+            iokit = ctypes.cdll.LoadLibrary(
+                "/System/Library/Frameworks/"
+                "IOKit.framework/IOKit")
+            cf = ctypes.cdll.LoadLibrary(
+                "/System/Library/Frameworks/"
+                "CoreFoundation.framework/CoreFoundation")
+
+            # Function signatures
+            iokit.IONotificationPortCreate.restype = c_void_p
+            iokit.IONotificationPortCreate.argtypes = [c_void_p]
+            iokit.IOServiceMatching.restype = c_void_p
+            iokit.IOServiceMatching.argtypes = [c_char_p]
+            iokit.IONotificationPortGetRunLoopSource.restype = c_void_p
+            iokit.IONotificationPortGetRunLoopSource.argtypes = [c_void_p]
+            iokit.IOIteratorNext.restype = c_void_p
+            iokit.IOIteratorNext.argtypes = [c_void_p]
+            iokit.IOObjectRelease.restype = c_int32
+            iokit.IOObjectRelease.argtypes = [c_void_p]
+
+            CALLBACK = CFUNCTYPE(None, c_void_p, c_void_p)
+            iokit.IOServiceAddMatchingNotification.restype = c_int32
+            iokit.IOServiceAddMatchingNotification.argtypes = [
+                c_void_p, c_char_p, c_void_p, CALLBACK, c_void_p, c_void_p
+            ]
+
+            cf.CFRunLoopGetCurrent.restype = c_void_p
+            cf.CFRunLoopAddSource.argtypes = [c_void_p, c_void_p, c_void_p]
+            cf.CFRunLoopRun.restype = None
+
+            # Keep strong reference to prevent GC crash
+            def _on_usb_event(_refcon, iterator):
+                # Drain iterator to arm next notification
+                while True:
+                    obj = iokit.IOIteratorNext(iterator)
+                    if not obj:
+                        break
+                    iokit.IOObjectRelease(obj)
+                self._event.set()
+
+            self._iokit_callback = CALLBACK(_on_usb_event)
+
+            port = iokit.IONotificationPortCreate(None)
+            if not port:
+                raise RuntimeError("IONotificationPortCreate failed")
+
+            source = iokit.IONotificationPortGetRunLoopSource(port)
+            run_loop = cf.CFRunLoopGetCurrent()
+            self._iokit_runloop = run_loop
+
+            # kCFRunLoopDefaultMode
+            mode = cf.CFStringCreateWithCString(
+                None, b"kCFRunLoopDefaultMode", 0
+            ) if hasattr(cf, "CFStringCreateWithCString") else None
+
+            # Use raw pointer for default mode
+            cf.CFRunLoopAddSource(run_loop, source,
+                                  ctypes.c_void_p.in_dll(
+                                      cf, "kCFRunLoopDefaultMode"))
+
+            # Register for matched + terminated on IOUSBHostDevice
+            for service_class in [b"IOUSBHostDevice", b"IOUSBDevice"]:
+                for notif_type in [b"IOServiceMatched",
+                                   b"IOServiceTerminate"]:
+                    matching = iokit.IOServiceMatching(service_class)
+                    if not matching:
+                        continue
+                    iterator = c_void_p()
+                    kr = iokit.IOServiceAddMatchingNotification(
+                        port, notif_type, matching,
+                        self._iokit_callback, None, byref(iterator))
+                    if kr == 0:
+                        # Drain iterator to arm notification
+                        while True:
+                            obj = iokit.IOIteratorNext(iterator)
+                            if not obj:
+                                break
+                            iokit.IOObjectRelease(obj)
+
+            log("[WATCHER] IOKit USB listener started")
+            cf.CFRunLoopRun()
+
+        except Exception as e:
+            log(f"[WATCHER] IOKit failed: {e}, fallback to /dev", "WARN")
+            self._start_dev_watcher_sync()
+
     def _start_dev_watcher(self):
-        """macOS/Linux: watch /dev for device file changes."""
+        """Linux: watch /dev for device file changes."""
         try:
             from watchdog.observers import Observer
             from watchdog.events import FileSystemEventHandler
@@ -85,6 +192,10 @@ class DeviceWatcher:
             log("[WATCHER] /dev listener started")
         except Exception as e:
             log(f"[WATCHER] /dev watcher failed: {e}", "WARN")
+
+    def _start_dev_watcher_sync(self):
+        """Fallback /dev watcher (called from IOKit thread on failure)."""
+        self._start_dev_watcher()
 
     def _start_wmi_watcher(self):
         """Windows: WMI event subscription for USB device changes."""
