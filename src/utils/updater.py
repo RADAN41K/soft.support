@@ -25,7 +25,12 @@ def _get_platform():
     """Return platform name for API query."""
     s = platform.system()
     if s == "Windows":
-        return "windows"
+        ver = sys.getwindowsversion().major
+        if ver <= 6:
+            return "windows_7"
+        if ver == 10 and platform.version().startswith("10.0.2"):
+            return "windows_11"
+        return "windows_10"
     if s == "Darwin":
         return "macos"
     return "linux"
