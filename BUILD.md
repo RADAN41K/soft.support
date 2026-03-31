@@ -58,6 +58,40 @@ dist/
 
 ---
 
+## Windows 7
+
+### Вимоги
+
+- Python 3.8 (остання версія з пiдтримкою Windows 7)
+- Windows 7 SP1
+
+### Збірка
+
+```powershell
+# Встановити Python 3.8 (python.org/downloads/release/python-3813/)
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements-win7.txt
+pip install pyinstaller
+python build.py
+```
+
+### Вiдмiнностi вiд Windows 10/11
+
+- Без `truststore` - SSL працює через `certifi` (fallback)
+- Обмежено верхнi версiї залежностей (Pillow<11, watchdog<5, qrcode<8)
+
+### Результат
+
+```
+dist\
+└── SoftSupport.exe    ← для Windows 7
+```
+
+Установник та встановлення - аналогiчно Windows 10/11 (див. нижче).
+
+---
+
 ## Windows 10 / 11
 
 ### Збірка
