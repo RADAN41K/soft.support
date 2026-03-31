@@ -3,6 +3,7 @@
 ## Вимоги (всі платформи)
 
 - Python 3.10+
+- Python 3.8 (для збiрки Windows 7)
 - pip
 
 ## Підготовка
@@ -13,12 +14,12 @@ git clone <repo-url> soft.support
 cd soft.support
 
 # Створити віртуальне середовище
-python -m venv venv
-
-# Активувати
 # macOS / Linux:
+python -m venv venv
 source venv/bin/activate
-# Windows:
+
+# Windows (див. нижче про збiрку для Win 7 та Win 10/11 на однiй машинi):
+py -3.14 -m venv venv
 venv\Scripts\activate
 
 # Встановити залежності
@@ -69,8 +70,8 @@ dist/
 
 ```powershell
 # Встановити Python 3.8 (python.org/downloads/release/python-3813/)
-python -m venv venv
-venv\Scripts\activate
+py -3.8 -m venv venv38
+venv38\Scripts\activate
 pip install -r requirements-win7.txt
 pip install pyinstaller
 python build.py
@@ -92,11 +93,41 @@ dist\
 
 ---
 
+## Збiрка Win 7 та Win 10/11 на однiй машинi
+
+На Windows 10 можна збирати обидвi версiї. Встановiть Python 3.8 та 3.10+, далi використовуйте окремi вiртуальнi оточення:
+
+```powershell
+# Збiрка для Win 7
+py -3.8 -m venv venv38
+venv38\Scripts\activate
+pip install -r requirements-win7.txt
+pip install pyinstaller
+python build.py
+deactivate
+
+# Збiрка для Win 10/11
+py -3.14 -m venv venv314
+venv314\Scripts\activate
+pip install -r requirements.txt
+pip install pyinstaller
+python build.py
+deactivate
+```
+
+`py -3.8` / `py -3.14` - вбудований Windows Python Launcher, автоматично знаходить потрiбну версiю. Оточення iзольованi, конфлiктiв не буде.
+
+---
+
 ## Windows 10 / 11
 
 ### Збірка
 
 ```powershell
+py -3.14 -m venv venv314
+venv314\Scripts\activate
+pip install -r requirements.txt
+pip install pyinstaller
 python build.py
 ```
 
