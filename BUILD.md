@@ -27,6 +27,16 @@ pip install -r requirements.txt
 pip install pyinstaller
 ```
 
+## Швидкi команди
+
+```bash
+# Запуск програми (розробка/тестування)
+source venv/bin/activate && python main.py
+
+# Збiрка бiнарника
+source venv/bin/activate && python build.py
+```
+
 ---
 
 ## macOS
