@@ -41,6 +41,14 @@ source venv/bin/activate && python build.py
 
 ## macOS
 
+### Вимоги
+
+```bash
+# create-dmg - для DMG з вiкном та стрiлкою "перетягни в Applications"
+# Без нього DMG буде простий (тiльки .app без ярлика на Applications)
+brew install create-dmg
+```
+
 ### Збірка
 
 ```bash
