@@ -792,8 +792,11 @@ def _bind_entry_shortcuts(dialog, entry):
     actions_by_keycode = {86: _paste, 65: _select_all, 67: _copy, 88: _cut}
 
     def _on_key(event):
-        # Check Ctrl (0x4) or Cmd (0x8)
-        if not (event.state & 0x4 or event.state & 0x8):
+        # Ctrl = 0x4, but NumLock adds 0x8 on Windows, CapsLock adds 0x2
+        # Cmd on macOS = 0x8 (no conflict - NumLock not used)
+        ctrl = event.state & 0x4 and not (event.state & 0x20000)
+        cmd = event.state & 0x8 and platform.system() == "Darwin"
+        if not (ctrl or cmd):
             return
         # Try by char first (works on macOS with any layout)
         key = event.char.lower() if event.char else ""
