@@ -23,6 +23,7 @@ a = Analysis(
     hiddenimports=[
         "customtkinter",
         "PIL",
+        "PIL._tkinter_finder",
         "serial",
         "serial.tools",
         "serial.tools.list_ports",
