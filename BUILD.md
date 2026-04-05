@@ -181,46 +181,43 @@ dist\
 
 ## Ubuntu / Linux
 
-### Збірка
+### Збiрка через Docker (з macOS або будь-якої ОС)
 
 ```bash
-python build.py
+# Одна команда - бiнарник + .deb для Ubuntu 22.04+
+./build-linux.sh
 ```
 
-### Результат
+Результат:
 
 ```
 dist/
-└── SoftSupport        ← бінарний файл
-~/Desktop/
-└── SoftSupport.desktop  ← ярлик (створюється автоматично)
+├── SoftSupport-linux                      ← бiнарник (для автооновлення)
+└── limansoft-support_X.X.X_amd64.deb      ← установник
 ```
 
-### Встановлення на торговій точці
+Потрiбен Docker Desktop. Скрипт автоматично збирає контейнер Ubuntu 22.04, компiлює бiнарник та створює .deb пакет.
 
-1. Скопіювати `dist/SoftSupport` + `config.json` на ПК
-2. Зробити виконуваним: `chmod +x SoftSupport`
-3. Покласти в `/opt/softsupport/` або `/home/user/`:
-   ```bash
-   sudo mkdir -p /opt/softsupport
-   sudo cp SoftSupport config.json /opt/softsupport/
-   sudo chmod +x /opt/softsupport/SoftSupport
-   ```
-4. Створити ярлик на робочому столі:
-   ```bash
-   cat > ~/Desktop/SoftSupport.desktop << 'EOF'
-   [Desktop Entry]
-   Version=1.0
-   Type=Application
-   Name=Soft Support
-   Comment=LimanSoft Tech Support
-   Exec=/opt/softsupport/SoftSupport
-   Icon=/opt/softsupport/icon.png
-   Terminal=false
-   Categories=Utility;
-   EOF
-   chmod +x ~/Desktop/SoftSupport.desktop
-   ```
+### Збiрка нативно (на Ubuntu)
+
+```bash
+python build.py
+./build-deb.sh
+```
+
+### Встановлення на торговiй точцi
+
+```bash
+sudo dpkg -i limansoft-support_X.X.X_amd64.deb
+```
+
+Установник:
+- Копiює програму в `~/.local/softsupport/`
+- Створює ярлик на робочому столi
+- Додає автозапуск
+- Автооновлення працює без sudo
+
+Видалення: `sudo dpkg -r limansoft-support`
 
 ---
 
