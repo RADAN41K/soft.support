@@ -415,9 +415,9 @@ class SoftSupportApp(ctk.CTk):
             on_network_change=lambda: self.after(0, self._trigger_network_scan),
         )
         self._watcher.start()
-        # Initial scan
-        self._trigger_device_scan()
-        self._trigger_network_scan()
+        # Initial scan after mainloop starts
+        self.after(100, self._trigger_device_scan)
+        self.after(100, self._trigger_network_scan)
 
     def _trigger_device_scan(self):
         if not self._scanning_devices:
