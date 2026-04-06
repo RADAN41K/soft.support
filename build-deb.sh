@@ -95,9 +95,10 @@ chown "$REAL_USER:$REAL_USER" "$DESKTOP_DIR/SoftSupport.desktop"
 chown "$REAL_USER:$REAL_USER" "$AUTOSTART_DIR/SoftSupport.desktop"
 
 # Mark desktop shortcut as trusted (GNOME 42+ / Ubuntu 22.04+)
-if command -v gio &> /dev/null; then
-    sudo -u "$REAL_USER" gio set "$DESKTOP_DIR/SoftSupport.desktop" \
-        "metadata::trusted" "true" 2>/dev/null || true
+REAL_UID=$(id -u "$REAL_USER")
+if command -v gio &> /dev/null && [ -S "/run/user/$REAL_UID/bus" ]; then
+    sudo -u "$REAL_USER" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$REAL_UID/bus" \
+        gio set "$DESKTOP_DIR/SoftSupport.desktop" "metadata::trusted" "true" 2>/dev/null || true
 fi
 
 # Cleanup placeholder
