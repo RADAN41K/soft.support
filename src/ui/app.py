@@ -77,12 +77,12 @@ class SoftSupportApp(ctk.CTk):
         self.after(1000, self._fit_height)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
-        # macOS has no tray — show window; Windows/Linux — start minimized
-        if platform.system() == "Darwin":
-            log(f"Форму запущено v{__version__}, додаток готовий до роботи")
-        else:
+        # Windows — start minimized to tray; macOS/Linux — show window
+        if platform.system() == "Windows":
             self.withdraw()
             log(f"Форму запущено v{__version__}, додаток готовий до роботи (згорнуто в трей)")
+        else:
+            log(f"Форму запущено v{__version__}, додаток готовий до роботи")
 
         # Check for updates silently in background
         check_and_apply_silently()
@@ -176,11 +176,9 @@ class SoftSupportApp(ctk.CTk):
         if self._tray_icon:
             self.withdraw()
             log("Вікно приховано в трей")
-        elif platform.system() == "Darwin":
-            self.iconify()
-            log("Вікно згорнуто у Dock")
         else:
-            self._tray_quit()
+            self.iconify()
+            log("Вікно згорнуто")
 
     # --- UI ---
     def _build_ui(self):
