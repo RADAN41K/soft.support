@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import platform
 import re
@@ -41,9 +42,68 @@ def _is_active_ip(ip):
     return not any(ip.startswith(p) for p in INACTIVE_PREFIXES)
 
 
+def _macos_set_activation_policy(policy):
+    """Set NSApplication activation policy via ctypes (no PyObjC).
+    0 = Regular (Dock icon visible), 1 = Accessory (no Dock icon).
+    """
+    try:
+        from ctypes import cdll, util, c_void_p, c_long, CFUNCTYPE
+        lib = cdll.LoadLibrary(util.find_library("objc"))
+        lib.objc_getClass.restype = c_void_p
+        lib.sel_registerName.restype = c_void_p
+        send = CFUNCTYPE(c_void_p, c_void_p, c_void_p)(
+            ("objc_msgSend", lib))
+        send_long = CFUNCTYPE(c_void_p, c_void_p, c_void_p, c_long)(
+            ("objc_msgSend", lib))
+        ns_app = send(
+            lib.objc_getClass(b"NSApplication"),
+            lib.sel_registerName(b"sharedApplication"))
+        send_long(ns_app, lib.sel_registerName(b"setActivationPolicy:"), policy)
+        if policy == 0:
+            send_long(ns_app, lib.sel_registerName(
+                b"activateIgnoringOtherApps:"), 1)
+    except Exception:
+        pass
+
+
+def _macos_tray_worker(icon_path, cmd_queue):
+    """Run pystray in a separate process (macOS only)."""
+    _macos_set_activation_policy(1)
+    import pystray
+    from PIL import Image as PILImage
+
+    if icon_path and os.path.exists(icon_path):
+        img = PILImage.open(icon_path).resize((64, 64))
+    else:
+        img = PILImage.new("RGB", (64, 64), "#FF6600")
+
+    def on_show(*_):
+        cmd_queue.put("show")
+
+    def on_logs(*_):
+        cmd_queue.put("logs")
+
+    def on_quit(*_):
+        cmd_queue.put("quit")
+        icon.stop()
+
+    menu = pystray.Menu(
+        pystray.MenuItem("Показати", on_show, default=True),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Вiдкрити логи", on_logs),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Закрити", on_quit),
+    )
+    icon = pystray.Icon(
+        "SoftSupport", img, "LimanSoft Технiчна пiдтримка", menu)
+    icon.run()
+
+
 class SoftSupportApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        if platform.system() == "Darwin":
+            _macos_set_activation_policy(1)
 
         self.title(f"LimanSoft Support v{__version__}")
         self.minsize(370, 200)
@@ -111,10 +171,10 @@ class SoftSupportApp(ctk.CTk):
 
     # --- System tray ---
     def _setup_tray(self):
+        if platform.system() == "Darwin":
+            self._setup_tray_macos()
+            return
         try:
-            if platform.system() == "Darwin":
-                log("macOS: сворачування у Dock замість трею")
-                return
             import pystray
             icon_path = getattr(self, "_icon_path", None)
             if icon_path and os.path.exists(icon_path):
@@ -141,6 +201,39 @@ class SoftSupportApp(ctk.CTk):
         except Exception as e:
             log(f"Трей недоступний: {e}", "WARN")
 
+    def _setup_tray_macos(self):
+        """Start pystray in a separate process (avoids AppKit+tkinter crash)."""
+        try:
+            icon_path = getattr(self, "_icon_path", None)
+            self._tray_queue = multiprocessing.Queue()
+            self._tray_process = multiprocessing.Process(
+                target=_macos_tray_worker,
+                args=(icon_path, self._tray_queue),
+                daemon=True,
+            )
+            self._tray_process.start()
+            self._tray_icon = True
+            self.after(200, self._poll_tray_queue)
+            log("Іконку меню-бару запущено (macOS, окремий процес)")
+        except Exception as e:
+            log(f"Меню-бар недоступний: {e}", "WARN")
+
+    def _poll_tray_queue(self):
+        """Check for commands from the macOS tray process."""
+        try:
+            while not self._tray_queue.empty():
+                cmd = self._tray_queue.get_nowait()
+                if cmd == "show":
+                    self._show_window()
+                elif cmd == "logs":
+                    self._open_log_folder()
+                elif cmd == "quit":
+                    self._tray_quit()
+                    return
+        except Exception:
+            pass
+        self.after(200, self._poll_tray_queue)
+
     def _tray_show(self, *_args):
         self.after(0, self._show_window)
 
@@ -163,7 +256,9 @@ class SoftSupportApp(ctk.CTk):
         log("Програма закрита користувачем")
         log(f"[ПК] Програма зупинена користувачем "
                    f"{os.environ.get('USERNAME', os.environ.get('USER', '?'))}")
-        if self._tray_icon:
+        if hasattr(self, "_tray_process") and self._tray_process.is_alive():
+            self._tray_process.terminate()
+        elif self._tray_icon and hasattr(self._tray_icon, "stop"):
             self._tray_icon.stop()
         self.after(0, self.destroy)
 
@@ -171,6 +266,8 @@ class SoftSupportApp(ctk.CTk):
         self.deiconify()
         self.lift()
         self.focus_force()
+        if platform.system() == "Darwin":
+            _macos_set_activation_policy(1)
 
     def _on_close(self):
         if self._tray_icon:
