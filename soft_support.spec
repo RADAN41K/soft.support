@@ -1,8 +1,36 @@
 # -*- mode: python ; coding: utf-8 -*-
 import platform
 
+import glob
+
 block_cipher = None
 system = platform.system()
+
+# Linux: bundle GObject Introspection typelibs for pystray tray icon
+linux_datas = []
+linux_binaries = []
+linux_hiddenimports = []
+if system == "Linux":
+    linux_hiddenimports = [
+        "gi",
+        "gi.repository.Gtk",
+        "gi.repository.GLib",
+        "gi.repository.GObject",
+        "gi.repository.GdkPixbuf",
+        "gi.repository.AyatanaAppIndicator3",
+        "pystray._appindicator",
+    ]
+    # Typelib files
+    typelib_dir = "/usr/lib/x86_64-linux-gnu/girepository-1.0"
+    for typelib in ["Gtk-3.0", "Gdk-3.0", "GLib-2.0", "GObject-2.0",
+                    "GdkPixbuf-2.0", "Gio-2.0", "AyatanaAppIndicator3-0.1",
+                    "Atk-1.0", "Pango-1.0", "cairo-1.0", "HarfBuzz-0.0"]:
+        path = f"{typelib_dir}/{typelib}.typelib"
+        if glob.glob(path):
+            linux_datas.append((path, "gi_typelibs"))
+    # GI shared lib
+    for so in glob.glob("/usr/lib/python3/dist-packages/gi/*.so"):
+        linux_binaries.append((so, "gi"))
 
 # Platform-specific icon
 if system == "Windows":
@@ -15,11 +43,11 @@ else:
 a = Analysis(
     ["main.py"],
     pathex=[],
-    binaries=[],
+    binaries=linux_binaries,
     datas=[
         ("assets", "assets"),
         ("VERSION", "."),
-    ],
+    ] + linux_datas,
     hiddenimports=[
         "customtkinter",
         "PIL",
@@ -29,6 +57,7 @@ a = Analysis(
         "serial.tools.list_ports",
         "psutil",
         "pystray",
+    ] + linux_hiddenimports + [
         "pip_system_certs",
         "truststore",
         "certifi",
@@ -39,7 +68,7 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=["hooks/gi_hook.py"] if system == "Linux" else [],
     excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,

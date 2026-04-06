@@ -4,6 +4,7 @@ set -e
 
 VERSION=$(cat VERSION | tr -d '[:space:]')
 
+docker rm -f soft-build-run 2>/dev/null || true
 docker build --platform linux/amd64 -t soft-build .
 docker run --platform linux/amd64 --name soft-build-run soft-build
 mkdir -p dist

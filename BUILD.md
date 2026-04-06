@@ -208,14 +208,17 @@ python build.py
 ### Встановлення на торговiй точцi
 
 ```bash
-sudo dpkg -i limansoft-support_X.X.X_amd64.deb
+sudo apt install ./limansoft-support_X.X.X_amd64.deb
 ```
 
 Установник:
 - Копiює програму в `~/.local/softsupport/`
 - Створює ярлик на робочому столi
 - Додає автозапуск
+- Встановлює розширення для iконки в треї
 - Автооновлення працює без sudo
+
+Пiсля першої установки потрiбен перелогiн (вийти/увiйти) для iконки в треї.
 
 Видалення: `sudo dpkg -r limansoft-support`
 

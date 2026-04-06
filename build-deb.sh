@@ -37,7 +37,7 @@ Architecture: $ARCH
 Installed-Size: $INSTALLED_SIZE
 Maintainer: LimanSoft <support@limansoft.com>
 Homepage: https://limansoft.com
-Depends: libgtk-3-0, libtk8.6, libtcl8.6, libx11-6, libxft2, libfontconfig1, libxss1
+Depends: libgtk-3-0, libtk8.6, libtcl8.6, libx11-6, libxft2, libfontconfig1, libxss1, gnome-shell-extension-appindicator, gir1.2-ayatanaappindicator3-0.1
 Description: LimanSoft Support - tech support utility
  Cross-platform tech support tool for retail locations.
 EOF
@@ -85,6 +85,9 @@ Categories=Utility;
 EOF
 chmod +x "$DESKTOP_DIR/SoftSupport.desktop"
 
+# App launcher (shows in taskbar search and allows pinning)
+cp "$DESKTOP_DIR/SoftSupport.desktop" /usr/share/applications/softsupport.desktop
+
 # Autostart
 mkdir -p "$AUTOSTART_DIR"
 cp "$DESKTOP_DIR/SoftSupport.desktop" "$AUTOSTART_DIR/"
@@ -101,9 +104,16 @@ if command -v gio &> /dev/null && [ -S "/run/user/$REAL_UID/bus" ]; then
         gio set "$DESKTOP_DIR/SoftSupport.desktop" "metadata::trusted" "true" 2>/dev/null || true
 fi
 
+# Enable tray icon extension (GNOME)
+if command -v gnome-extensions &> /dev/null && [ -S "/run/user/$REAL_UID/bus" ]; then
+    sudo -u "$REAL_USER" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$REAL_UID/bus" \
+        gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com 2>/dev/null || true
+fi
+
 # Cleanup placeholder
 rm -rf /opt/_placeholder
 echo "LimanSoft Support installed to $INSTALL_DIR"
+echo "NOTE: re-login required for tray icon on first install"
 SCRIPT
 chmod 755 "$PKG_DIR/DEBIAN/postinst"
 
@@ -115,6 +125,7 @@ REAL_HOME=$(eval echo "~$REAL_USER")
 rm -rf "$REAL_HOME/.local/softsupport"
 rm -f "$REAL_HOME/Desktop/SoftSupport.desktop"
 rm -f "$REAL_HOME/.config/autostart/SoftSupport.desktop"
+rm -f /usr/share/applications/softsupport.desktop
 echo "LimanSoft Support removed"
 SCRIPT
 chmod 755 "$PKG_DIR/DEBIAN/postrm"
