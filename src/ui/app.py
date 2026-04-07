@@ -1,6 +1,7 @@
 import multiprocessing
 import os
 import platform
+import queue
 import re
 import sys
 import threading
@@ -118,6 +119,7 @@ class SoftSupportApp(ctk.CTk):
         self._qr_image = None
         self._tray_icon = None
         self._tray_thread = None
+        self._ui_queue = queue.Queue()
 
         # Collapsible sections state: {name: (button, content, row, expanded)}
         self._sections = {}
@@ -146,6 +148,20 @@ class SoftSupportApp(ctk.CTk):
 
         # Check for updates silently in background
         check_and_apply_silently()
+        self._poll_ui_queue()
+
+    def _run_on_ui(self, callback):
+        """Thread-safe: schedule callback on the main thread."""
+        self._ui_queue.put(callback)
+
+    def _poll_ui_queue(self):
+        """Process pending UI callbacks from background threads."""
+        try:
+            while True:
+                self._ui_queue.get_nowait()()
+        except queue.Empty:
+            pass
+        self.after(50, self._poll_ui_queue)
 
     def run(self):
         """Start the application."""
@@ -235,7 +251,7 @@ class SoftSupportApp(ctk.CTk):
         self.after(200, self._poll_tray_queue)
 
     def _tray_show(self, *_args):
-        self.after(0, self._show_window)
+        self._run_on_ui(self._show_window)
 
     def _tray_open_logs(self, *_args):
         self._open_log_folder()
@@ -260,7 +276,7 @@ class SoftSupportApp(ctk.CTk):
             self._tray_process.terminate()
         elif self._tray_icon and hasattr(self._tray_icon, "stop"):
             self._tray_icon.stop()
-        self.after(0, self.destroy)
+        self._run_on_ui(self.destroy)
 
     def _show_window(self):
         self.deiconify()
@@ -506,8 +522,8 @@ class SoftSupportApp(ctk.CTk):
         self._scanning_devices = False
         self._scanning_network = False
         self._watcher = DeviceWatcher(
-            on_device_change=lambda: self.after(0, self._trigger_device_scan),
-            on_network_change=lambda: self.after(0, self._trigger_network_scan),
+            on_device_change=lambda: self._run_on_ui(self._trigger_device_scan),
+            on_network_change=lambda: self._run_on_ui(self._trigger_network_scan),
         )
         self._watcher.start()
         # Initial scan after mainloop starts
@@ -552,14 +568,14 @@ class SoftSupportApp(ctk.CTk):
                     log("[USB] Немає")
                 self._prev["usb_all"] = usb_all_keys
 
-            self.after(0, lambda: self._update_ports_ui(
+            self._run_on_ui(lambda: self._update_ports_ui(
                 serial_ports, usb_devices))
         except Exception as e:
             log(f"[ERROR] device scan failed: {e}")
             self._scan_error = True
         finally:
             self._scanning_devices = False
-            self.after(0, lambda: self._update_section_header(
+            self._run_on_ui(lambda: self._update_section_header(
                 "ports", self._port_count))
 
     def _bg_scan_network(self):
@@ -580,7 +596,7 @@ class SoftSupportApp(ctk.CTk):
                 else:
                     log("[VPN] NetBird ВІДКЛЮЧЕНИЙ")
 
-            self.after(0, lambda: self._update_network_ui(
+            self._run_on_ui(lambda: self._update_network_ui(
                 local_ip, netbird_ip, radmin_ip, vpn_on))
         except Exception as e:
             log(f"[ERROR] network scan failed: {e}")
