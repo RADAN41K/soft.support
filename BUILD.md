@@ -1,40 +1,20 @@
-# Збірка Soft Support
+# Збiрка Soft Support
 
-## Вимоги (всі платформи)
-
-- Python 3.10+
-- Python 3.8 (для збiрки Windows 7)
-- pip
-
-## Підготовка
+## Пiдготовка (всi платформи)
 
 ```bash
-# Клонувати репозиторій
 git clone <repo-url> soft.support
 cd soft.support
-
-# Створити віртуальне середовище
-# macOS / Linux:
 python -m venv venv
-source venv/bin/activate
-
-# Windows (див. нижче про збiрку для Win 7 та Win 10/11 на однiй машинi):
-py -3.14 -m venv venv
-venv\Scripts\activate
-
-# Встановити залежності
+source venv/bin/activate        # macOS / Linux / Git Bash
 pip install -r requirements.txt
 pip install pyinstaller
 ```
 
-## Швидкi команди
+Запуск для розробки:
 
 ```bash
-# Запуск програми (розробка/тестування)
 source venv/bin/activate && python main.py
-
-# Збiрка бiнарника
-source venv/bin/activate && python build.py
 ```
 
 ---
@@ -49,174 +29,37 @@ source venv/bin/activate && python build.py
 brew install create-dmg
 ```
 
-### Збірка
+### Збiрка
 
 ```bash
 python build.py
-```
-
-### Результат
-
-```
-dist/
-├── SoftSupport.app    ← додаток
-├── SoftSupport.dmg    ← образ для розповсюдження
-└── config.json        ← конфігурація (покласти вручну)
-```
-
-### Встановлення на торговій точці
-
-1. Скопіювати `SoftSupport.dmg` + `config.json` на Mac
-2. Відкрити DMG, перетягнути `SoftSupport.app` в `Applications`
-3. Покласти `config.json` поряд з `.app` (або в `/Applications/`)
-4. Запустити з Launchpad або Finder
-
-### Ярлик на робочому столі
-
-Перетягнути `SoftSupport.app` з Applications на Desktop з затиснутим ⌘+⌥ (створить alias).
-
----
-
-## Windows 7
-
-### Вимоги
-
-- Python 3.8 (остання версія з пiдтримкою Windows 7)
-- Windows 7 SP1
-
-### Збірка
-
-```powershell
-# Встановити Python 3.8 (python.org/downloads/release/python-3813/)
-py -3.8 -m venv venv38
-venv38\Scripts\activate
-pip install -r requirements-win7.txt
-pip install pyinstaller
-python build.py
-```
-
-### Вiдмiнностi вiд Windows 10/11
-
-- Без `truststore` - SSL працює через `certifi` (fallback)
-- Обмежено верхнi версiї залежностей (Pillow<11, watchdog<5, qrcode<8)
-
-### Результат
-
-```
-dist\
-└── SoftSupport.exe    ← для Windows 7
-```
-
-Установник та встановлення - аналогiчно Windows 10/11 (див. нижче).
-
----
-
-## Збiрка Win 7 та Win 10/11 на однiй машинi
-
-На Windows 10 можна збирати обидвi версiї. Встановiть Python 3.8 та 3.10+, далi використовуйте окремi вiртуальнi оточення:
-
-**PowerShell / CMD:**
-```powershell
-# Збiрка для Win 7
-py -3.8 -m venv venv38
-venv38\Scripts\activate
-pip install -r requirements-win7.txt
-pip install pyinstaller
-python build.py
-deactivate
-
-# Збiрка для Win 10/11
-py -3.14 -m venv venv314
-venv314\Scripts\activate
-pip install -r requirements.txt
-pip install pyinstaller
-python build.py
-deactivate
-```
-
-**Git Bash / WSL:**
-```bash
-# Збiрка для Win 7
-py -3.8 -m venv venv38
-source venv38/Scripts/activate
-pip install -r requirements-win7.txt
-pip install pyinstaller
-python build.py
-deactivate
-
-# Збiрка для Win 10/11
-py -3.14 -m venv venv314
-source venv314/Scripts/activate
-pip install -r requirements.txt
-pip install pyinstaller
-python build.py
-deactivate
-```
-
-`py -3.8` / `py -3.14` - вбудований Windows Python Launcher, автоматично знаходить потрiбну версiю. Оточення iзольованi, конфлiктiв не буде.
-
----
-
-## Windows 10 / 11
-
-### Збірка
-
-```powershell
-py -3.14 -m venv venv314
-venv314\Scripts\activate
-pip install -r requirements.txt
-pip install pyinstaller
-python build.py
-```
-
-### Результат
-
-```
-dist\
-└── SoftSupport.exe    ← один виконуваний файл
-```
-
-### Створення установника (Inno Setup)
-
-1. Завантажити [Inno Setup](https://jrsoftware.org/isdl.php) (безкоштовно)
-2. Відкрити `installer.iss` в Inno Setup Compiler
-3. Натиснути **Build → Compile** (або Ctrl+F9)
-4. Готовий файл: `dist\SoftSupport_Setup.exe`
-
-> Якщо пiсля оновлення iконка на робочому столi не змiнилась - скинути кеш:
-> `ie4uinit.exe -ClearIconCache`
-
-### Що робить установник
-
-- Встановлює в `C:\Program Files\SoftSupport\`
-- Копіює `config.json` поряд з `.exe`
-- Створює ярлик на робочому столі (галочка при встановленні)
-- Додає в меню "Пуск"
-- Деінсталятор через "Програми та компоненти"
-
-### Встановлення на торговій точці
-
-1. Скопіювати `SoftSupport_Setup.exe` на ПК
-2. Запустити → Далі → Встановити
-3. Відредагувати `config.json` в папці встановлення під конкретну точку
-
----
-
-## Ubuntu / Linux
-
-### Збiрка через Docker (з macOS або будь-якої ОС)
-
-```bash
-# Одна команда - бiнарник + .deb для Ubuntu 22.04+
-./build-linux.sh
 ```
 
 Результат:
 
 ```
 dist/
-├── SoftSupport-linux                      ← бiнарник (для автооновлення)
-└── limansoft-support_X.X.X_amd64.deb      ← установник
+├── SoftSupport.app    - додаток
+└── SoftSupport.dmg    - образ для розповсюдження
+```
+
+### Встановлення на точцi
+
+1. Скопiювати `SoftSupport.dmg` + `config.json` на Mac
+2. Вiдкрити DMG, перетягнути `SoftSupport.app` в `Applications`
+3. Покласти `config.json` поряд з `.app`
+4. Запустити з Launchpad або Finder
+
+Ярлик на робочому столi: перетягнути `SoftSupport.app` з Applications на Desktop з затиснутим Cmd+Opt.
+
+---
+
+## Linux (Ubuntu 22.04+)
+
+### Збiрка через Docker (з macOS або будь-якої ОС)
+
+```bash
+./build-linux.sh
 ```
 
 Потрiбен Docker Desktop. Скрипт автоматично збирає контейнер Ubuntu 22.04, компiлює бiнарник та створює .deb пакет.
@@ -228,7 +71,15 @@ python build.py
 ./build-deb.sh
 ```
 
-### Встановлення на торговiй точцi
+Результат:
+
+```
+dist/
+├── SoftSupport                            - бiнарник
+└── limansoft-support_X.X.X_amd64.deb      - установник
+```
+
+### Встановлення на точцi
 
 ```bash
 sudo apt install ./limansoft-support_X.X.X_amd64.deb
@@ -247,19 +98,99 @@ sudo apt install ./limansoft-support_X.X.X_amd64.deb
 
 ---
 
+## Windows
+
+### Збiрка Win 10/11
+
+**PowerShell / CMD:**
+```powershell
+py -3.14 -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+pip install pyinstaller
+python build.py
+```
+
+**Git Bash:**
+```bash
+py -3.14 -m venv venv
+source venv/Scripts/activate
+pip install -r requirements.txt
+pip install pyinstaller
+python build.py
+```
+
+### Збiрка Win 7
+
+Потрiбен Python 3.8 (остання версiя з пiдтримкою Windows 7): [python.org/downloads/release/python-3813](https://www.python.org/downloads/release/python-3813/)
+
+**PowerShell / CMD:**
+```powershell
+py -3.8 -m venv venv38
+venv38\Scripts\activate
+pip install -r requirements-win7.txt
+pip install pyinstaller
+python build.py
+```
+
+**Git Bash:**
+```bash
+py -3.8 -m venv venv38
+source venv38/Scripts/activate
+pip install -r requirements-win7.txt
+pip install pyinstaller
+python build.py
+```
+
+Вiдмiнностi Win 7: без `truststore`, обмежено верхнi версiї залежностей (Pillow<11, watchdog<5, qrcode<8).
+
+`py -3.8` / `py -3.14` - вбудований Windows Python Launcher, автоматично знаходить потрiбну версiю.
+
+### Результат
+
+```
+dist\
+└── SoftSupport.exe
+```
+
+### Створення установника (Inno Setup)
+
+1. Завантажити [Inno Setup](https://jrsoftware.org/isdl.php) (безкоштовно)
+2. Вiдкрити `installer.iss` в Inno Setup Compiler
+3. Натиснути **Build -> Compile** (або Ctrl+F9)
+4. Готовий файл: `dist\SoftSupport_Setup.exe`
+
+> Якщо пiсля оновлення iконка на робочому столi не змiнилась - скинути кеш:
+> `ie4uinit.exe -ClearIconCache`
+
+Що робить установник:
+- Встановлює в `C:\Program Files\SoftSupport\`
+- Копiює `config.json` поряд з `.exe`
+- Створює ярлик на робочому столi (галочка при встановленнi)
+- Додає в меню "Пуск"
+- Деiнсталятор через "Програми та компоненти"
+
+### Встановлення на точцi
+
+1. Скопiювати `SoftSupport_Setup.exe` на ПК
+2. Запустити - Далi - Встановити
+3. Вiдредагувати `config.json` в папцi встановлення пiд конкретну точку
+
+---
+
 ## Завантаження на сервер оновлень
 
-Сервер: https://limansoft.com → Система → Оновлення
+Сервер: https://limansoft.com - Система - Оновлення
 
 Для кожної платформи потрiбно завантажити установник (для технiкiв) та бiнарник (для автооновлення).
 
-| Платформа | download_url (установник) | binary_url (автооновлення) |
-|-----------|--------------------------|---------------------------|
-| Windows 7 | `dist/SoftSupport_Setup.exe` | `dist/SoftSupport.exe` |
-| Windows 10 | `dist/SoftSupport_Setup.exe` | `dist/SoftSupport.exe` |
-| Windows 11 | `dist/SoftSupport_Setup.exe` | `dist/SoftSupport.exe` |
-| macOS | `dist/SoftSupport.dmg` | `dist/SoftSupport.app/Contents/MacOS/SoftSupport` |
-| Linux | `dist/limansoft-support_X.X.X_amd64.deb` | `dist/SoftSupport` (з Docker) |
+| Платформа  | download_url (установник)                | binary_url (автооновлення)                        |
+|------------|------------------------------------------|---------------------------------------------------|
+| Windows 7  | `dist/SoftSupport_Setup.exe`             | `dist/SoftSupport.exe`                            |
+| Windows 10 | `dist/SoftSupport_Setup.exe`             | `dist/SoftSupport.exe`                            |
+| Windows 11 | `dist/SoftSupport_Setup.exe`             | `dist/SoftSupport.exe`                            |
+| macOS      | `dist/SoftSupport.dmg`                   | `dist/SoftSupport.app/Contents/MacOS/SoftSupport` |
+| Linux      | `dist/limansoft-support_X.X.X_amd64.deb` | `dist/SoftSupport` (з Docker)                     |
 
 - **download_url** - файл для технiкiв, встановлення на нових точках
 - **binary_url** - файл для автооновлення на iснуючих точках
@@ -270,7 +201,7 @@ sudo apt install ./limansoft-support_X.X.X_amd64.deb
 
 ## config.json
 
-Кожна торгова точка має свій `config.json`:
+Кожна торгова точка має свiй `config.json`:
 
 ```json
 {
@@ -280,7 +211,7 @@ sudo apt install ./limansoft-support_X.X.X_amd64.deb
 }
 ```
 
-**Важливо:** файл повинен лежати **поряд** з програмою:
+Файл повинен лежати поряд з програмою:
 - macOS: поряд з `SoftSupport.app`
-- Windows: поряд з `SoftSupport.exe` (в папці встановлення)
-- Linux: поряд з бінарником `SoftSupport`
+- Windows: поряд з `SoftSupport.exe` (в папцi встановлення)
+- Linux: поряд з бiнарником `SoftSupport`
