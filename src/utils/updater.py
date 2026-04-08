@@ -82,9 +82,17 @@ def _verify_sha256(file_path, expected_hash):
 
 def apply_update(update_info, on_progress=None):
     """Download and apply update. Returns True on success."""
-    download_url = update_info.get("download_url", "")
-    expected_sha = update_info.get("sha256", "")
     new_version = update_info.get("version", "?")
+
+    # macOS/Linux: prefer binary_url for direct binary replacement
+    if platform.system() != "Windows":
+        download_url = (update_info.get("binary_url", "")
+                        or update_info.get("download_url", ""))
+        expected_sha = (update_info.get("binary_sha256", "")
+                        or update_info.get("sha256", ""))
+    else:
+        download_url = update_info.get("download_url", "")
+        expected_sha = update_info.get("sha256", "")
 
     if not download_url:
         log("Немає URL для завантаження", "ERROR")
@@ -121,8 +129,10 @@ def apply_update(update_info, on_progress=None):
         # Apply update
         if platform.system() == "Windows":
             _apply_windows(tmp_file)
+        elif platform.system() == "Darwin":
+            _apply_macos(sys.executable, tmp_file)
         else:
-            _apply_unix(sys.executable, tmp_file)
+            _apply_linux(sys.executable, tmp_file)
 
         log(f"Оновлення до v{new_version} застосовано, перезапуск...")
         return True
@@ -158,8 +168,34 @@ del "%~f0"
     sys.exit(0)
 
 
-def _apply_unix(current_exe, new_exe):
-    """Replace binary and restart on macOS/Linux."""
+def _apply_macos(current_exe, new_exe):
+    """Replace binary inside .app bundle and restart via open(1)."""
+    # current_exe = .../SoftSupport.app/Contents/MacOS/SoftSupport
+    # Find .app bundle root for restart
+    app_bundle = current_exe
+    while app_bundle and not app_bundle.endswith(".app"):
+        app_bundle = os.path.dirname(app_bundle)
+
+    os.chmod(new_exe, 0o755)
+    sh_path = os.path.join(tempfile.gettempdir(), "limansoft_update.sh")
+    restart_cmd = f'open -a "{app_bundle}"' if app_bundle else f'"{current_exe}" &'
+    sh_content = f"""#!/bin/bash
+sleep 2
+cp -f "{new_exe}" "{current_exe}"
+chmod +x "{current_exe}"
+{restart_cmd}
+rm -f "{new_exe}" "{sh_path}"
+"""
+    with open(sh_path, "w") as f:
+        f.write(sh_content)
+    os.chmod(sh_path, 0o755)
+
+    subprocess.Popen(["bash", sh_path])
+    sys.exit(0)
+
+
+def _apply_linux(current_exe, new_exe):
+    """Replace binary and restart on Linux."""
     os.chmod(new_exe, 0o755)
     sh_path = os.path.join(tempfile.gettempdir(), "limansoft_update.sh")
     sh_content = f"""#!/bin/bash
