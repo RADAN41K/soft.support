@@ -74,7 +74,7 @@ def _macos_tray_worker(icon_path, cmd_queue):
     from PIL import Image as PILImage
 
     if icon_path and os.path.exists(icon_path):
-        img = PILImage.open(icon_path).resize((64, 64))
+        img = PILImage.open(icon_path).convert("RGBA")
     else:
         img = PILImage.new("RGB", (64, 64), "#FF6600")
 
@@ -97,6 +97,31 @@ def _macos_tray_worker(icon_path, cmd_queue):
     )
     icon = pystray.Icon(
         "SoftSupport", img, "LimanSoft Технiчна пiдтримка", menu)
+
+    # Monkey-patch: pystray renders at 1x, causing blur on Retina.
+    # Override to render at 2x pixels and set NSImage logical size.
+    _orig_assert = icon._assert_image
+
+    def _retina_assert_image():
+        import io as _io
+        thickness = icon._status_bar.thickness()
+        px_size = (int(thickness * 2), int(thickness * 2))
+        pt_size = (int(thickness), int(thickness))
+
+        if icon._icon_image:
+            return
+
+        source = icon._icon.resize(px_size, PILImage.LANCZOS)
+        b = _io.BytesIO()
+        source.save(b, "png")
+
+        import AppKit, Foundation
+        data = Foundation.NSData(b.getvalue())
+        icon._icon_image = AppKit.NSImage.alloc().initWithData_(data)
+        icon._icon_image.setSize_(pt_size)
+        icon._status_item.button().setImage_(icon._icon_image)
+
+    icon._assert_image = _retina_assert_image
     icon.run()
 
 
@@ -179,7 +204,7 @@ class SoftSupportApp(ctk.CTk):
         if platform.system() == "Windows" and os.path.exists(icon_ico):
             self.iconbitmap(icon_ico)
         elif os.path.exists(icon_png):
-            img = Image.open(icon_png)
+            img = Image.open(icon_png).convert("RGBA")
             self._icon = ImageTk.PhotoImage(img)
             self.iconphoto(True, self._icon)
         if os.path.exists(icon_png):
@@ -194,7 +219,7 @@ class SoftSupportApp(ctk.CTk):
             import pystray
             icon_path = getattr(self, "_icon_path", None)
             if icon_path and os.path.exists(icon_path):
-                tray_image = Image.open(icon_path).resize((64, 64))
+                tray_image = Image.open(icon_path).convert("RGBA").resize((256, 256), Image.LANCZOS)
             else:
                 tray_image = Image.new("RGB", (64, 64), ORANGE)
 
