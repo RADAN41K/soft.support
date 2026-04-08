@@ -6,6 +6,7 @@
 #expr FileClose(FileHandle)
 
 [Setup]
+AppId={{B5F1E4A2-8C3D-4F6A-9E7B-1D2C3A4B5E6F}
 AppName=LimanSoft Support
 AppVersion={#AppVer}
 AppPublisher=LimanSoft
