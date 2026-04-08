@@ -94,7 +94,7 @@ sudo apt install ./limansoft-support_X.X.X_amd64.deb
 
 Пiсля першої установки потрiбен перелогiн (вийти/увiйти) для iконки в треї.
 
-Видалення: `sudo dpkg -r limansoft-support`
+Видалення: `sudo apt remove limansoft-support`
 
 ---
 
