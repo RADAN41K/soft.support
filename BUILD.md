@@ -163,6 +163,9 @@ dist\
 3. Натиснути **Build → Compile** (або Ctrl+F9)
 4. Готовий файл: `dist\SoftSupport_Setup.exe`
 
+> Якщо пiсля оновлення iконка на робочому столi не змiнилась - скинути кеш:
+> `ie4uinit.exe -ClearIconCache`
+
 ### Що робить установник
 
 - Встановлює в `C:\Program Files\SoftSupport\`
