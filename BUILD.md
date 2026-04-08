@@ -115,6 +115,7 @@ dist\
 
 На Windows 10 можна збирати обидвi версiї. Встановiть Python 3.8 та 3.10+, далi використовуйте окремi вiртуальнi оточення:
 
+**PowerShell / CMD:**
 ```powershell
 # Збiрка для Win 7
 py -3.8 -m venv venv38
@@ -127,6 +128,25 @@ deactivate
 # Збiрка для Win 10/11
 py -3.14 -m venv venv314
 venv314\Scripts\activate
+pip install -r requirements.txt
+pip install pyinstaller
+python build.py
+deactivate
+```
+
+**Git Bash / WSL:**
+```bash
+# Збiрка для Win 7
+py -3.8 -m venv venv38
+source venv38/Scripts/activate
+pip install -r requirements-win7.txt
+pip install pyinstaller
+python build.py
+deactivate
+
+# Збiрка для Win 10/11
+py -3.14 -m venv venv314
+source venv314/Scripts/activate
 pip install -r requirements.txt
 pip install pyinstaller
 python build.py
