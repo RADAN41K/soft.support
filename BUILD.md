@@ -227,6 +227,27 @@ sudo apt install ./limansoft-support_X.X.X_amd64.deb
 
 ---
 
+## Завантаження на сервер оновлень
+
+Сервер: https://limansoft.com → Система → Оновлення
+
+Для кожної платформи потрiбно завантажити установник (для технiкiв) та бiнарник (для автооновлення).
+
+| Платформа | download_url (установник) | binary_url (автооновлення) |
+|-----------|--------------------------|---------------------------|
+| Windows 7 | `dist/SoftSupport_Setup.exe` | `dist/SoftSupport.exe` |
+| Windows 10 | `dist/SoftSupport_Setup.exe` | `dist/SoftSupport.exe` |
+| Windows 11 | `dist/SoftSupport_Setup.exe` | `dist/SoftSupport.exe` |
+| macOS | `dist/SoftSupport.dmg` | `dist/SoftSupport.app/Contents/MacOS/SoftSupport` |
+| Linux | `dist/limansoft-support_X.X.X_amd64.deb` | `dist/SoftSupport` (з Docker) |
+
+- **download_url** - файл для технiкiв, встановлення на нових точках
+- **binary_url** - файл для автооновлення на iснуючих точках
+- Windows: автооновлення працює через установник, але бiнарник теж варто додати на всяк випадок
+- macOS/Linux: автооновлення замiнює бiнарник напряму
+
+---
+
 ## config.json
 
 Кожна торгова точка має свій `config.json`:
