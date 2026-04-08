@@ -763,12 +763,40 @@ class SoftSupportApp(ctk.CTk):
                 light_image=qr_img, dark_image=qr_img, size=(190, 190))
             self.lbl_qr.configure(image=self._qr_image, text="")
 
+    # --- Password dialog ---
+    def _ask_password(self, title="Доступ", text="Введiть пароль:"):
+        """Show password dialog with masked input. Returns entered string or None."""
+        dialog = ctk.CTkToplevel(self)
+        dialog.title(title)
+        dialog.geometry("300x150")
+        dialog.resizable(False, False)
+        dialog.grab_set()
+        dialog.attributes("-topmost", True)
+
+        result = [None]
+
+        ctk.CTkLabel(dialog, text=text).pack(pady=(20, 5))
+        entry = ctk.CTkEntry(dialog, show="*", width=200)
+        entry.pack(pady=5)
+        entry.focus_force()
+
+        def on_ok(*_):
+            result[0] = entry.get()
+            dialog.destroy()
+
+        def on_cancel():
+            dialog.destroy()
+
+        entry.bind("<Return>", on_ok)
+        ctk.CTkButton(dialog, text="OK", command=on_ok, width=100).pack(pady=10)
+        dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+        dialog.wait_window()
+        return result[0]
+
     # --- Open logs (password protected) ---
     def _open_logs_with_password(self):
         self.attributes("-topmost", False)
-        pwd_dialog = ctk.CTkInputDialog(
-            text="Введiть пароль:", title="Доступ до логiв")
-        pwd = pwd_dialog.get_input()
+        pwd = self._ask_password(title="Доступ до логiв")
         if pwd != EDIT_PASSWORD:
             if pwd is not None:
                 log("Невдала спроба доступу до логів", "WARN")
@@ -780,10 +808,7 @@ class SoftSupportApp(ctk.CTk):
     # --- Config editor ---
     def _open_config_editor(self):
         self.attributes("-topmost", False)
-
-        pwd_dialog = ctk.CTkInputDialog(
-            text="Введiть пароль:", title="Доступ")
-        pwd = pwd_dialog.get_input()
+        pwd = self._ask_password()
         if pwd != EDIT_PASSWORD:
             if pwd is not None:
                 log("Невдала спроба входу до налаштувань", "WARN")
@@ -796,10 +821,7 @@ class SoftSupportApp(ctk.CTk):
     def _prompt_code_input(self):
         """Show code input dialog (requires password)."""
         self.attributes("-topmost", False)
-
-        pwd_dialog = ctk.CTkInputDialog(
-            text="Введiть пароль технiка:", title="Доступ")
-        pwd = pwd_dialog.get_input()
+        pwd = self._ask_password(text="Введiть пароль технiка:")
         if pwd != EDIT_PASSWORD:
             if pwd is not None:
                 log("Невдала спроба входу", "WARN")
