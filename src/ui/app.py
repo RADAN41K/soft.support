@@ -770,8 +770,8 @@ class SoftSupportApp(ctk.CTk):
         dialog.title(title)
         dialog.geometry("300x150")
         dialog.resizable(False, False)
-        dialog.grab_set()
         dialog.attributes("-topmost", True)
+        dialog.after(100, dialog.grab_set)
 
         result = [None]
 
@@ -833,9 +833,10 @@ class SoftSupportApp(ctk.CTk):
     def _show_code_dialog(self):
         """Show dialog for entering POS code."""
         dialog = ctk.CTkToplevel(self)
-        dialog.title("LimanSoft — Код торгової точки")
+        dialog.title("LimanSoft - Код торгової точки")
         dialog.geometry("350x220")
         dialog.attributes("-topmost", True)
+        dialog.update_idletasks()
         dialog.focus_force()
         dialog.grid_columnconfigure(0, weight=1)
 
